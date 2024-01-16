@@ -161,8 +161,8 @@ async function checkUserActiveWarning(userID: HashedUserID): Promise<CheckResult
     const MILLISECONDS_IN_HOUR = 3600000;
     const now = Date.now();
     const warnings = (await db.prepare("all",
-        `SELECT "reason" 
-        FROM warnings 
+        `SELECT "reason"
+        FROM warnings
         WHERE "userID" = ? AND "issueTime" > ? AND enabled = 1 AND type = 0
         ORDER BY "issueTime" DESC`,
         [
@@ -360,10 +360,10 @@ async function updateDataIfVideoDurationChange(videoID: VideoID, service: Servic
     let lockedCategoryList = await db.prepare("all", 'SELECT category, "actionType", reason from "lockCategories" where "videoID" = ? AND "service" = ?', [videoID, service]);
 
     const previousSubmissions = await db.prepare("all",
-        `SELECT "videoDuration", "UUID" 
-        FROM "sponsorTimes" 
-        WHERE "videoID" = ? AND "service" = ? AND 
-            "hidden" = 0 AND "shadowHidden" = 0 AND 
+        `SELECT "videoDuration", "UUID"
+        FROM "sponsorTimes"
+        WHERE "videoID" = ? AND "service" = ? AND
+            "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND
             "votes" > -2 AND "videoDuration" != 0`,
         [videoID, service]
@@ -580,7 +580,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
 
             const startingLocked = isVIP ? 1 : 0;
             try {
-                await db.prepare("run", `INSERT INTO "sponsorTimes" 
+                await db.prepare("run", `INSERT INTO "sponsorTimes"
                     ("videoID", "startTime", "endTime", "votes", "locked", "UUID", "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation", "shadowHidden", "hashedVideoID", "userAgent", "description")
                     VALUES(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`, [
                     videoID, segmentInfo.segment[0], segmentInfo.segment[1], startingVotes, startingLocked, UUID, userID, timeSubmitted, 0
@@ -591,7 +591,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
                 //add to private db as well
                 await privateDB.prepare("run", `INSERT INTO "sponsorTimes" VALUES(?, ?, ?, ?)`, [videoID, hashedIP, timeSubmitted, service]);
 
-                await db.prepare("run", `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") 
+                await db.prepare("run", `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published")
                     SELECT ?, ?, ?, ?
                     WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`, [
                     videoID, apiVideoDetails?.authorId || "", apiVideoDetails?.title || "", apiVideoDetails?.published || 0, videoID]);

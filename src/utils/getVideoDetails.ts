@@ -1,59 +1,24 @@
-import { config } from "../config";
-import { innerTubeVideoDetails } from "../types/innerTubeApi.model";
-import { APIVideoData } from "../types/youtubeApi.model";
-import { YouTubeAPI } from "../utils/youtubeApi";
-import { getPlayerData } from "../utils/innerTubeAPI";
+import { BilibiliVideoDetailView } from "../types/bilibiliViewApi.model";
+import { BilibiliAPI } from "./bilibiliApi";
 
 export interface videoDetails {
-  videoId: string,
-  duration: number,
-  authorId: string,
-  authorName: string,
-  title: string,
-  published: number,
-  thumbnails: {
-    url: string,
-    width: number,
-    height: number,
-  }[]
+    videoId: string,
+    duration: number,
+    authorId: string,
+    authorName: string,
+    title: string,
+    published: number,
 }
 
-const convertFromInnerTube = (input: innerTubeVideoDetails): videoDetails => ({
-    videoId: input.videoId,
-    duration: Number(input.lengthSeconds),
-    authorId: input.channelId,
-    authorName: input.author,
+const convertFromVideoViewAPI = (videoId: string, input: BilibiliVideoDetailView): videoDetails => ({
+    videoId: videoId,
+    duration: input.pages.length >= 1 && input.pages[0].duration ? input.pages[0].duration : input.duration,
+    authorId: input.owner.mid.toString(),
+    authorName: input.owner.name,
     title: input.title,
-    published: new Date(input.publishDate).getTime()/1000,
-    thumbnails: input.thumbnail.thumbnails
+    published: input.pubdate,
 });
-
-const convertFromNewLeaf = (input: APIVideoData): videoDetails => ({
-    videoId: input.videoId,
-    duration: input.lengthSeconds,
-    authorId: input.authorId,
-    authorName: input.author,
-    title: input.title,
-    published: input.published,
-    thumbnails: input.videoThumbnails
-});
-
-async function newLeafWrapper(videoId: string, ignoreCache: boolean) {
-    const result = await YouTubeAPI.listVideos(videoId, ignoreCache);
-    return result?.data ?? Promise.reject();
-}
 
 export function getVideoDetails(videoId: string, ignoreCache = false): Promise<videoDetails> {
-    if (!config.newLeafURLs) {
-        return getPlayerData(videoId, ignoreCache)
-            .then(data => convertFromInnerTube(data));
-    }
-    return Promise.any([
-        newLeafWrapper(videoId, ignoreCache)
-            .then(videoData => convertFromNewLeaf(videoData)),
-        getPlayerData(videoId, ignoreCache)
-            .then(data => convertFromInnerTube(data))
-    ]).catch(() => {
-        return null;
-    });
+    return BilibiliAPI.getVideoDetailView(videoId).then(data => convertFromVideoViewAPI(videoId, data));
 }
