@@ -53,7 +53,6 @@ import { getBranding, getBrandingByHashEndpoint } from "./routes/getBranding";
 import { postBranding } from "./routes/postBranding";
 import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
-import { getBrandingStats } from "./routes/getBrandingStats";
 import { getTopBrandingUsers } from "./routes/getTopBrandingUsers";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
@@ -151,8 +150,6 @@ function setupRoutes(router: Router, server: Server) {
     //send out totals
     //send the total submissions, total views and total minutes saved
     router.get("/api/getTotalStats", getTotalStats);
-
-    router.get("/api/brandingStats", getBrandingStats);
 
     router.get("/api/getUserInfo", getUserInfo);
     router.get("/api/userInfo", getUserInfo);

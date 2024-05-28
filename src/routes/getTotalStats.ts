@@ -3,7 +3,7 @@ import { config } from "../config";
 import { Request, Response } from "express";
 import axios from "axios";
 import { Logger } from "../utils/logger";
-import { getCWSUsers, getChromeUsers } from "../utils/getCWSUsers";
+import { getEdgeUsers } from "../utils/getCWSUsers";
 
 // A cache of the number of chrome web store users
 let chromeUsersCache = 0;
@@ -81,9 +81,8 @@ function updateExtensionUsers() {
             .catch( /* istanbul ignore next */ () => Logger.debug(`Failing to connect to user counter at: ${config.userCounterURL}`));
     }
 
-    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v3/addons/addon/sponsorblock/";
-    const chromeExtensionUrl = "https://chrome.google.com/webstore/detail/sponsorblock-for-youtube/mnjggcdmjocbbbhaepdhchncahnbgone";
-    const chromeExtId = "mnjggcdmjocbbbhaepdhchncahnbgone";
+    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v3/addons/addon/bilisponsorblock/";
+    const edgeExtId = "khkeolgobhdoloioehjgfpobjnmagfha";
 
     axios.get(mozillaAddonsUrl)
         .then(res => firefoxUsersCache = res.data.average_daily_users )
@@ -91,10 +90,9 @@ function updateExtensionUsers() {
             Logger.debug(`Failing to connect to ${mozillaAddonsUrl}`);
             return 0;
         });
-    getCWSUsers(chromeExtId)
+    getEdgeUsers(edgeExtId)
         .then(res => chromeUsersCache = res)
-        .catch(/* istanbul ignore next */ () =>
-            getChromeUsers(chromeExtensionUrl)
-                .then(res => chromeUsersCache = res)
-        );
+        .catch((err) => {
+            Logger.error(`Error getting Edge users - ${err}`);
+        });
 }
