@@ -11,6 +11,7 @@ import { parseUserAgent } from "../utils/userAgent";
 import { getMatchVideoUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
+import { PortVideo } from "../types/portVideo.model";
 
 type CheckResult = {
     pass: boolean;
@@ -68,6 +69,23 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const ytbDuration = ytbSegments[0].videoDuration;
     if (Math.abs(ytbDuration - biliVideoDetail?.duration) > 3) {
         return res.status(200).send("视频时长不一致，无法绑定");
+    }
+
+    // TODO: handle duration change
+    // check existing matches
+    const existingMatch: Array<PortVideo> = await db.prepare(
+        "all",
+        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "biliDuration", "ytbDuration"
+        FROM "portVideo" WHERE "bvID" = ? AND "ytbID" = ?`,
+        [bvID, ytbID]
+    );
+    if (existingMatch.length > 0) {
+        if (existingMatch.filter((s) => s.votes <= -2).length > 0) {
+            return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
+        } else {
+            // TODO: count submission as vote
+            return res.status(200).send("OK");
+        }
     }
 
     // prepare to be saved

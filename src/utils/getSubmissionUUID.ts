@@ -22,6 +22,6 @@ export function getMatchVideoUUID(
     userID: HashedUserID,
     biliDuration: VideoDuration,
     ytbDuration: VideoDuration
-) {
+): HashedValue {
     return `${getHash(`${bvID}${ytbID}${userID}${biliDuration}${ytbDuration}`, 1)}8` as HashedValue;
 }
