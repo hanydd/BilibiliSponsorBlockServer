@@ -8,6 +8,7 @@ export interface PortVideo {
     UUID: portVideoUUID;
     votes: number;
     locked: boolean;
+    hidden: boolean;
     biliDuration: number;
     ytbDuration: number;
 }

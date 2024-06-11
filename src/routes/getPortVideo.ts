@@ -7,8 +7,8 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
 
     const portVideoInfo: PortVideo = await db.prepare(
         "get",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "biliDuration", "ytbDuration" FROM "portVideo"
-        WHERE "bvID" = ? AND "votes" > -2`,
+        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration" FROM "portVideo"
+        WHERE "bvID" = ? AND "hidden" = 0 AND "votes" > -2`,
         [videoID]
     );
 

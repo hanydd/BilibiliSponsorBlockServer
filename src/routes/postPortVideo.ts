@@ -38,7 +38,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
     const userID: HashedUserID = await getHashCache(paramUserID);
 
-    const invalidCheckResult = checkInvalidFields(bvID, ytbID, paramUserID, userID, paramBiliDuration);
+    const invalidCheckResult = checkInvalidFields(bvID, ytbID, paramUserID);
 
     if (!invalidCheckResult.pass) {
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
@@ -76,12 +76,12 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     // check existing matches
     const existingMatch: Array<PortVideo> = await db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "biliDuration", "ytbDuration"
+        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration"
         FROM "portVideo" WHERE "bvID" = ? AND "ytbID" = ?`,
         [bvID, ytbID]
     );
     if (existingMatch.length > 0) {
-        if (existingMatch.filter((s) => s.votes <= -2).length > 0) {
+        if (existingMatch.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
             // TODO: count submission as vote
@@ -102,7 +102,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await db.prepare(
             "run",
             `INSERT INTO "portVideo" ("bvID", "ytbID", "UUID", "votes", "locked", "userID", "timeSubmitted",
-             "biliDuration", "ytbDuration", "userAgent") VALUES(?,?,?,?,?,?,?,?,?,?)`,
+             "biliDuration", "ytbDuration", "userAgent", "hidden") VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 bvID,
                 ytbID,
@@ -114,6 +114,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
                 paramBiliDuration,
                 ytbDuration,
                 userAgent,
+                0,
             ]
         );
     } catch (err) {
