@@ -22,7 +22,7 @@ import axios from "axios";
 import { vote } from "./voteOnSponsorTime";
 import { canSubmit } from "../utils/permissions";
 import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
-import * as youtubeID from "../utils/youtubeID";
+import * as biliID from "../utils/bilibiliID";
 import { acquireLock } from "../utils/redisLock";
 import { checkBanStatus } from "../utils/checkBan";
 
@@ -195,8 +195,8 @@ async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID
         invalidFields.push("videoID");
     }
     if (service === Service.YouTube && config.mode !== "test") {
-        const sanitizedVideoID = youtubeID.validate(videoID) ? videoID : youtubeID.sanitize(videoID);
-        if (!youtubeID.validate(sanitizedVideoID)) {
+        const sanitizedVideoID = biliID.validate(videoID) ? videoID : biliID.sanitize(videoID);
+        if (!biliID.validate(sanitizedVideoID)) {
             invalidFields.push("videoID");
             errors.push("YouTube videoID could not be extracted");
         }
@@ -390,7 +390,7 @@ async function updateDataIfVideoDurationChange(videoID: VideoID, service: Servic
         // Hide all previous submissions
         await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = 1
             WHERE "videoID" = ? AND "service" = ? AND "videoDuration" != ?
-            AND "hidden" = 0 AND "shadowHidden" = 0 AND 
+            AND "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND "votes" > -2`,
         [videoID, service, videoDuration]);
 

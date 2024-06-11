@@ -5,6 +5,7 @@ import { HashedUserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
 import { config } from "../config";
 import * as youtubeID from "../utils/youtubeID";
+import * as biliID from "../utils/bilibiliID";
 import axios from "axios";
 import { getVideoDetails } from "../utils/getVideoDetails";
 import { parseUserAgent } from "../utils/userAgent";
@@ -145,7 +146,13 @@ function checkInvalidFields(
         }
     }
 
-    // TODO: add bilibili id check
+    if (config.mode !== "test") {
+        const sanitizedBvID = biliID.validate(bvID) ? ytbID : biliID.sanitize(bvID);
+        if (!biliID.validate(sanitizedBvID)) {
+            invalidFields.push("bvID");
+            errors.push("Bilibili videoID could not be extracted");
+        }
+    }
 
     const minLength = config.minUserIDLength;
     if (typeof userID !== "string" || userID?.length < minLength) {
