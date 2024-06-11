@@ -10,18 +10,17 @@ export const getEdgeUsers = (extID: string): Promise<number | undefined> =>
             return 0;
         });
 
-/* istanbul ignore next */
-export function getChromeUsers(chromeExtensionUrl: string): Promise<number> {
-    return axios.get(chromeExtensionUrl)
-        .then(res => {
-            const body = res.data;
-            const match = body.match(/>([\d,]+) users</)?.[1];
+export function getChromeUsers(extID: string): Promise<number | undefined> {
+    return axios
+        .get(`https://img.shields.io/chrome-web-store/users/${extID}`)
+        .then((res) => {
+            const match = res.data.match(/"users: ?([0-9,]+)"/)?.[1];
             if (match) {
                 return parseInt(match.replace(/,/g, ""));
             }
         })
-        .catch(/* istanbul ignore next */ () => {
-            Logger.debug(`Failing to connect to ${chromeExtensionUrl}`);
+        .catch(() => {
+            Logger.debug(`Failing to get user count of the Chrome Web Store: ${extID}`);
             return 0;
         });
 }
