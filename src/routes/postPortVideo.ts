@@ -126,38 +126,35 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     return res.status(200).send("OK");
 }
 
-function checkInvalidFields(
-    bvID: string,
-    ytbID: string,
-    paramUserID: string,
-    userID: string,
-    biliDuration: number
-): CheckResult {
+function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): CheckResult {
     const invalidFields = [];
     const errors = [];
+
     if (typeof ytbID !== "string" || ytbID?.length == 0) {
         invalidFields.push("ytbID");
     }
+    if (typeof bvID !== "string" || bvID?.length == 0) {
+        invalidFields.push("bvID");
+    }
+
+    const minLength = config.minUserIDLength;
+    if (typeof paramUserID !== "string" || paramUserID?.length < minLength) {
+        invalidFields.push("userID");
+        if (paramUserID?.length < minLength) errors.push(`userID must be at least ${minLength} characters long`);
+    }
+
     if (config.mode !== "test") {
         const sanitizedYtbID = youtubeID.validate(ytbID) ? ytbID : youtubeID.sanitize(ytbID);
         if (!youtubeID.validate(sanitizedYtbID)) {
             invalidFields.push("ytbID");
             errors.push("YouTube videoID could not be extracted");
         }
-    }
 
-    if (config.mode !== "test") {
-        const sanitizedBvID = biliID.validate(bvID) ? ytbID : biliID.sanitize(bvID);
+        const sanitizedBvID = biliID.validate(bvID) ? bvID : biliID.sanitize(bvID);
         if (!biliID.validate(sanitizedBvID)) {
             invalidFields.push("bvID");
             errors.push("Bilibili videoID could not be extracted");
         }
-    }
-
-    const minLength = config.minUserIDLength;
-    if (typeof userID !== "string" || userID?.length < minLength) {
-        invalidFields.push("userID");
-        if (userID?.length < minLength) errors.push(`userID must be at least ${minLength} characters long`);
     }
 
     if (invalidFields.length !== 0) {
