@@ -34,7 +34,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const bvID = req.query.bvID || req.body.bvID;
     const ytbID = req.query.ytbID || req.body.ytbID;
     const paramUserID = req.query.userID || req.body.userID;
-    const paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) ||
+    let paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) ||
         0) as VideoDuration;
 
     if (!paramUserID) {
@@ -85,11 +85,22 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
     }
-    if (paramBiliDuration && Math.abs(paramBiliDuration - biliVideoDetail?.duration) > 2) {
-        return res.status(400).send("视频时长异常，请刷新页面再试");
+    let apiBiliDuration = biliVideoDetail?.duration as VideoDuration;
+    if (!paramBiliDuration && !apiBiliDuration) {
+        return res.status(400).send(`无法获取B站视频信息，请重试。
+如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
     }
-    if (Math.abs(ytbDuration - biliVideoDetail?.duration) > 3) {
-        return res.status(400).send("视频时长不一致，无法绑定");
+    if (!paramBiliDuration) {
+        paramBiliDuration = apiBiliDuration;
+    }
+    if (!apiBiliDuration) {
+        apiBiliDuration = paramBiliDuration;
+    }
+    if (Math.abs(paramBiliDuration - apiBiliDuration) > 2) {
+        return res.status(400).send("视频时长异常，请刷新页面重试");
+    }
+    if (Math.abs(ytbDuration - paramBiliDuration) > 2 && Math.abs(ytbDuration - apiBiliDuration) > 2) {
+        return res.status(400).send("对应视频时长不一致，无法绑定");
     }
 
     // TODO: handle duration change
