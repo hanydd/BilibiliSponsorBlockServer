@@ -13,6 +13,8 @@ import { getMatchVideoUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo } from "../types/portVideo.model";
+import { ISODurationRegex, parseISODurationToSeconds } from "../utils/parseTime";
+import { average } from "../utils/array";
 
 type CheckResult = {
     pass: boolean;
@@ -25,6 +27,8 @@ const CHECK_PASS: CheckResult = {
     errorMessage: "",
     errorCode: 0,
 };
+
+const ytbTimeRegex = new RegExp(`"duration: ?(${ISODurationRegex.source})"`);
 
 export async function postPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.bvID || req.body.bvID;
@@ -39,15 +43,15 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const userID: HashedUserID = await getHashCache(paramUserID);
 
     const invalidCheckResult = checkInvalidFields(bvID, ytbID, paramUserID);
-
     if (!invalidCheckResult.pass) {
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
     }
 
     const getSegments = axios.get(
-        "https://sponsor.ajay.app/api/skipSegments?videoID=he_BL6Q5u1Y" +
+        `https://sponsor.ajay.app/api/skipSegments?videoID=${ytbID}` +
             '&categories=["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro",' +
-            '"outro","preview","filler","music_offtopic"]&actionTypes=["skip","poi","mute","full"]'
+            '"outro","preview","filler","music_offtopic"]&actionTypes=["skip","poi","mute","full"]',
+        { timeout: 5000 }
     );
     const getBiliDetail = getVideoDetails(bvID, true);
 
@@ -56,20 +60,38 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     if (sbResult.status != 200 && sbResult.status != 404) {
         res.status(400).send("无法连接SponsorBlock服务器");
     }
-
     const ytbSegments: Array<Segment> = sbResult.data;
-    if (sbResult.status === 404 || ytbSegments?.length === 0) {
-        // TODO: find another way to verify video duration
-        return res.status(404).send("YouTube数据库中无此视频片段");
+
+    // get ytb video duration
+    let ytbDuration: VideoDuration = 0 as VideoDuration;
+    if (sbResult.status === 404 || ytbSegments.length === 0) {
+        // use YouTube Data API to get video information via shield.io
+        const shieldRes = await axios.get(
+            `https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2
+            Fwww.googleapis.com%2Fyoutube%2Fv3%2Fvideos%3Fid%3D${ytbID}%26part%3DcontentDetails%26key
+            %3D${config.youtubeDataApiKey}&query=%24.items%5B%3A1%5D.contentDetails.duration&label=duration`,
+            { timeout: 5000 }
+        );
+        ytbDuration = parseISODurationToSeconds(
+            decodeURIComponent(shieldRes.data).match(ytbTimeRegex)[1]
+        ) as VideoDuration;
+
+        Logger.info(`Retrieving YTB video duration ${ytbID} via Data API: ${ytbDuration}s`);
+    } else {
+        ytbDuration = average(ytbSegments.map((s) => s.videoDuration)) as VideoDuration;
+        Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
     }
 
     // video duration check
+    if (!ytbDuration) {
+        return res.status(500).send(`无法获取YouTube视频信息，请重试。
+如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
+    }
     if (paramBiliDuration && Math.abs(paramBiliDuration - biliVideoDetail?.duration) > 2) {
         return res.status(400).send("视频时长异常，请刷新页面再试");
     }
-    const ytbDuration = ytbSegments[0].videoDuration;
     if (Math.abs(ytbDuration - biliVideoDetail?.duration) > 3) {
-        return res.status(200).send("视频时长不一致，无法绑定");
+        return res.status(400).send("视频时长不一致，无法绑定");
     }
 
     // TODO: handle duration change

@@ -6,3 +6,7 @@ export function shuffleArray<T>(array: T[]): T[] {
 
     return array;
 }
+
+export function average(array: number[]): number | null {
+    return array.reduce((sum, v) => sum + v, 0) / array.length;
+}
