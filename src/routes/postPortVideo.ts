@@ -13,7 +13,7 @@ import { getMatchVideoUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo } from "../types/portVideo.model";
-import { ISODurationRegex, parseISODurationToSeconds } from "../utils/parseTime";
+import { ISODurationRegex, parseISODurationToVideoDuration } from "../utils/parseTime";
 import { average } from "../utils/array";
 
 type CheckResult = {
@@ -51,7 +51,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         `https://sponsor.ajay.app/api/skipSegments?videoID=${ytbID}` +
             '&categories=["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro",' +
             '"outro","preview","filler","music_offtopic"]&actionTypes=["skip","poi","mute","full"]',
-        { timeout: 5000 }
+        { timeout: 10000 }
     );
     const getBiliDetail = getVideoDetails(bvID, true);
 
@@ -60,7 +60,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     if (sbResult.status != 200 && sbResult.status != 404) {
         res.status(400).send("无法连接SponsorBlock服务器");
     }
-    const ytbSegments: Array<Segment> = sbResult.data;
+    const ytbSegments: Segment[] = sbResult.data;
 
     // get ytb video duration
     let ytbDuration: VideoDuration = 0 as VideoDuration;
@@ -70,11 +70,9 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             `https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2
             Fwww.googleapis.com%2Fyoutube%2Fv3%2Fvideos%3Fid%3D${ytbID}%26part%3DcontentDetails%26key
             %3D${config.youtubeDataApiKey}&query=%24.items%5B%3A1%5D.contentDetails.duration&label=duration`,
-            { timeout: 5000 }
+            { timeout: 10000 }
         );
-        ytbDuration = parseISODurationToSeconds(
-            decodeURIComponent(shieldRes.data).match(ytbTimeRegex)[1]
-        ) as VideoDuration;
+        ytbDuration = parseISODurationToVideoDuration(decodeURIComponent(shieldRes.data).match(ytbTimeRegex)[1]);
 
         Logger.info(`Retrieving YTB video duration ${ytbID} via Data API: ${ytbDuration}s`);
     } else {
@@ -96,7 +94,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // TODO: handle duration change
     // check existing matches
-    const existingMatch: Array<PortVideo> = await db.prepare(
+    const existingMatch: PortVideo[] = await db.prepare(
         "all",
         `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration"
         FROM "portVideo" WHERE "bvID" = ? AND "ytbID" = ?`,

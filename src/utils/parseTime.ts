@@ -1,3 +1,5 @@
+import { VideoDuration } from "../types/segments.model";
+
 export const ISODurationRegex = new RegExp(
     /P(?:([\d.]+)Y)?(?:([\d.]+)M)?(?:([\d.]+)W)?(?:([\d.]+)D)?T(?:([\d.]+)H)?(?:([\d.]+)M)?(?:([\d.]+)S)?/
 );
@@ -18,4 +20,8 @@ export function parseISODurationToSeconds(duration: string): number | null {
         );
     }
     return null;
+}
+
+export function parseISODurationToVideoDuration(duration: string): VideoDuration | null {
+    return parseISODurationToSeconds(duration) as VideoDuration;
 }
