@@ -108,11 +108,16 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const existingMatch: PortVideo[] = await db.prepare(
         "all",
         `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration"
-        FROM "portVideo" WHERE "bvID" = ? AND "ytbID" = ?`,
+        FROM "portVideo" WHERE "bvID" = ? OR "ytbID" = ?`,
         [bvID, ytbID]
     );
-    if (existingMatch.length > 0) {
-        if (existingMatch.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
+
+    // check video availability first, if existing matches contain videos that are unavailable, hide them.
+
+    // check if the existing data is exactly the same as the submitted ones
+    const exactMatches = existingMatch.filter((port) => port.bvID == bvID && port.ytbID == ytbID);
+    if (exactMatches.length > 0) {
+        if (exactMatches.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
             // TODO: count submission as vote
