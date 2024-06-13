@@ -1,13 +1,14 @@
 import { BilibiliVideoDetailView } from "../types/bilibiliViewApi.model";
 import { BilibiliAPI } from "./bilibiliApi";
+import { Logger } from "./logger";
 
 export interface videoDetails {
-    videoId: string,
-    duration: number,
-    authorId: string,
-    authorName: string,
-    title: string,
-    published: number,
+    videoId: string;
+    duration: number;
+    authorId: string;
+    authorName: string;
+    title: string;
+    published: number;
 }
 
 const convertFromVideoViewAPI = (videoId: string, input: BilibiliVideoDetailView): videoDetails => ({
@@ -19,6 +20,11 @@ const convertFromVideoViewAPI = (videoId: string, input: BilibiliVideoDetailView
     published: input.pubdate,
 });
 
-export function getVideoDetails(videoId: string, ignoreCache = false): Promise<videoDetails> {
-    return BilibiliAPI.getVideoDetailView(videoId).then(data => convertFromVideoViewAPI(videoId, data));
+export function getVideoDetails(videoId: string, ignoreCache = false): Promise<videoDetails | null> {
+    return BilibiliAPI.getVideoDetailView(videoId)
+        .then((data) => convertFromVideoViewAPI(videoId, data))
+        .catch((e) => {
+            Logger.error(e.message);
+            return null;
+        });
 }

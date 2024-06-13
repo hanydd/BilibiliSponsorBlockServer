@@ -25,3 +25,14 @@ export function parseISODurationToSeconds(duration: string): number | null {
 export function parseISODurationToVideoDuration(duration: string): VideoDuration | null {
     return parseISODurationToSeconds(duration) as VideoDuration;
 }
+
+export function durationEquals(d1: number | VideoDuration, d2: number | VideoDuration, tolerance = 2): boolean {
+    return Math.abs(d1 - d2) < tolerance;
+}
+
+export function durationsAllEqual(durations: number[], tolerance = 2): boolean {
+    if (durations.length < 2) {
+        return true;
+    }
+    return Math.max(...durations) - Math.min(...durations) < tolerance;
+}

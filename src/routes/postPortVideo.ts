@@ -1,20 +1,21 @@
-import { Request, Response, response } from "express";
+import { Request, Response } from "express";
 import { Segment, VideoDuration } from "../types/segments.model";
-import { db, privateDB } from "../databases/databases";
+import { db } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
 import { config } from "../config";
 import * as youtubeID from "../utils/youtubeID";
 import * as biliID from "../utils/bilibiliID";
 import axios from "axios";
-import { getVideoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
 import { parseUserAgent } from "../utils/userAgent";
 import { getMatchVideoUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo } from "../types/portVideo.model";
-import { ISODurationRegex, parseISODurationToVideoDuration } from "../utils/parseTime";
 import { average } from "../utils/array";
+import { getYoutubeSegments, getYoutubeVideoDetail } from "../utils/getYoutubeVideoSegments";
+import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 
 type CheckResult = {
     pass: boolean;
@@ -27,8 +28,6 @@ const CHECK_PASS: CheckResult = {
     errorMessage: "",
     errorCode: 0,
 };
-
-const ytbTimeRegex = new RegExp(`"duration: ?(${ISODurationRegex.source})"`);
 
 export async function postPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.bvID || req.body.bvID;
@@ -47,34 +46,16 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
     }
 
-    const getSegments = axios.get(
-        `https://sponsor.ajay.app/api/skipSegments?videoID=${ytbID}` +
-            '&categories=["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro",' +
-            '"outro","preview","filler","music_offtopic"]&actionTypes=["skip","poi","mute","full"]',
-        { timeout: 10000 }
-    );
-    const getBiliDetail = getVideoDetails(bvID, true);
+    const [ytbSegments, biliVideoDetail] = await Promise.all([getYoutubeSegments(ytbID), getVideoDetails(bvID, true)]);
 
-    const [sbResult, biliVideoDetail] = await Promise.all([getSegments, getBiliDetail]);
-
-    if (sbResult.status != 200 && sbResult.status != 404) {
+    if (!ytbSegments) {
         res.status(400).send("无法连接SponsorBlock服务器");
     }
-    const ytbSegments: Segment[] = sbResult.data;
 
     // get ytb video duration
     let ytbDuration: VideoDuration = 0 as VideoDuration;
-    if (sbResult.status === 404 || ytbSegments.length === 0) {
-        // use YouTube Data API to get video information via shield.io
-        const shieldRes = await axios.get(
-            `https://img.shields.io/badge/dynamic/json?url=https%3A%2F%2
-            Fwww.googleapis.com%2Fyoutube%2Fv3%2Fvideos%3Fid%3D${ytbID}%26part%3DcontentDetails%26key
-            %3D${config.youtubeDataApiKey}&query=%24.items%5B%3A1%5D.contentDetails.duration&label=duration`,
-            { timeout: 10000 }
-        );
-        ytbDuration = parseISODurationToVideoDuration(decodeURIComponent(shieldRes.data).match(ytbTimeRegex)[1]);
-
-        Logger.info(`Retrieving YTB video duration ${ytbID} via Data API: ${ytbDuration}s`);
+    if (ytbSegments.length === 0) {
+        ytbDuration = await getYoutubeVideoDetail(ytbID);
     } else {
         ytbDuration = average(ytbSegments.map((s) => s.videoDuration)) as VideoDuration;
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
@@ -104,6 +85,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     // TODO: handle duration change
+
     // check existing matches
     const existingMatch: PortVideo[] = await db.prepare(
         "all",
@@ -112,10 +94,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         [bvID, ytbID]
     );
 
-    // check video availability first, if existing matches contain videos that are unavailable, hide them.
-
     // check if the existing data is exactly the same as the submitted ones
-    const exactMatches = existingMatch.filter((port) => port.bvID == bvID && port.ytbID == ytbID);
+    const exactMatches = existingMatch.filter(
+        (port) =>
+            port.bvID == bvID &&
+            port.ytbID == ytbID &&
+            durationsAllEqual([port.biliDuration, port.ytbDuration, apiBiliDuration, ytbDuration])
+    );
     if (exactMatches.length > 0) {
         if (exactMatches.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
@@ -125,11 +110,38 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         }
     }
 
+    // check video availability, if existing matches contain videos that are unavailable, hide them.
+    const uuidToHide = new Set();
+    // ytb videos
+    const bvMatches = existingMatch.filter((p) => p.bvID == bvID && p.votes > -2 && !p.hidden);
+    if (bvMatches.length > 1) {
+        Logger.error(`Multiple PortVideo match found for bvid: ${bvID}`);
+    }
+    const allYtbDurations: VideoDuration[] = await Promise.all(bvMatches.map((p) => getYoutubeVideoDetail(p.ytbID)));
+    for (let i = 0; i < allYtbDurations.length; i++) {
+        if (!allYtbDurations[i] || !durationEquals(allYtbDurations[i], bvMatches[i].ytbDuration)) {
+            uuidToHide.add(bvMatches[i].UUID);
+        }
+    }
+    // bili videos
+    const ytbMatches = existingMatch.filter(
+        (p) => !uuidToHide.has(p.UUID) && p.ytbID == ytbID && p.votes > -2 && !p.hidden
+    );
+    const allBiliDetails: videoDetails[] = await Promise.all(ytbMatches.map((p) => getVideoDetails(p.bvID)));
+    for (let i = 0; i < allBiliDetails.length; i++) {
+        if (!allBiliDetails[i] || !durationEquals(allBiliDetails[i].duration, ytbMatches[i].biliDuration)) {
+            uuidToHide.add(ytbMatches[i].UUID);
+        }
+    }
+    if (uuidToHide.size > 0) {
+        await db.prepare("run", `UPDATE "portVideo" SET hidden = 1 WHERE "UUID" = ANY(?)`, [Array.from(uuidToHide)]);
+    }
+
     // prepare to be saved
     const isVIP = await isUserVIP(userID);
     const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgent(req.get("user-agent")) ?? "";
     const timeSubmitted = Date.now();
-    const matchVideoUUID = getMatchVideoUUID(bvID, ytbID, userID, paramBiliDuration, ytbDuration);
+    const matchVideoUUID = getMatchVideoUUID(bvID, ytbID, userID, paramBiliDuration, ytbDuration, timeSubmitted);
     const startingVotes = 0;
     const startingLocked = isVIP ? 1 : 0;
 
