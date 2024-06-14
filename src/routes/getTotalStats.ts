@@ -82,7 +82,7 @@ function updateExtensionUsers() {
             .catch( /* istanbul ignore next */ () => Logger.debug(`Failing to connect to user counter at: ${config.userCounterURL}`));
     }
 
-    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v3/addons/addon/bilisponsorblock/";
+    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v5/addons/addon/bilisponsorblock/";
     const edgeExtId = "khkeolgobhdoloioehjgfpobjnmagfha";
     const chromeExtId = "eaoelafamejbnggahofapllmfhlhajdd";
 
