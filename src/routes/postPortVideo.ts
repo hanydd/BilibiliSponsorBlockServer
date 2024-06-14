@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
-import { Segment, VideoDuration } from "../types/segments.model";
-import { db } from "../databases/databases";
+import { HashedIP, Segment, Service, VideoDuration } from "../types/segments.model";
+import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
 import { config } from "../config";
@@ -9,13 +9,17 @@ import * as biliID from "../utils/bilibiliID";
 import axios from "axios";
 import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
 import { parseUserAgent } from "../utils/userAgent";
-import { getMatchVideoUUID } from "../utils/getSubmissionUUID";
+import { getMatchVideoUUID, getPortSegmentUUID, getSubmissionUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo } from "../types/portVideo.model";
 import { average } from "../utils/array";
 import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
+import { getHash } from "../utils/getHash";
+import { getReputation } from "../utils/reputation";
+import { getIP } from "../utils/getIP";
+import { QueryCacher } from "../utils/queryCacher";
 
 type CheckResult = {
     pass: boolean;
@@ -35,6 +39,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const paramUserID = req.query.userID || req.body.userID;
     const paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) ||
         0) as VideoDuration;
+    const rawIP = getIP(req);
 
     if (!paramUserID) {
         return res.status(400).send("No userID provided");
@@ -145,6 +150,9 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const matchVideoUUID = getMatchVideoUUID(bvID, ytbID, userID, paramBiliDuration, ytbDuration, timeSubmitted);
     const startingVotes = 0;
     const startingLocked = isVIP ? 1 : 0;
+    const reputation = await getReputation(userID);
+    const hashedBvID = getHash(bvID, 1);
+    const hashedIP = (await getHashCache(rawIP + config.globalSalt)) as HashedIP;
 
     // save match video
     try {
@@ -172,8 +180,70 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     // save all segments
+    const newSegments = [];
+    if (ytbSegments?.length == 0) {
+        return res.status(200).send("OK");
+    }
+    const s = ytbSegments[0];
+    console.log(s);
+    const newUUID = getPortSegmentUUID(bvID, ytbID, s.UUID);
+    await db.prepare(
+        "run",
+        `INSERT INTO "sponsorTimes" ("videoID", "startTime", "endTime", "votes", "locked", "UUID",
+        "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation",
+        "shadowHidden", "hashedVideoID", "userAgent", "description", "ytbID", "ytbSegmentUUID", "portUUID")
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
+        [
+            bvID,
+            s.segment[0],
+            s.segment[1],
+            startingVotes,
+            startingLocked,
+            newUUID,
+            userID,
+            timeSubmitted,
+            0,
+            s.category,
+            s.actionType,
+            Service.YouTube,
+            paramBiliDuration,
+            reputation,
+            0,
+            hashedBvID,
+            userAgent,
+            s.description,
+            ytbID,
+            s.UUID,
+            matchVideoUUID,
+        ]
+    );
+    await privateDB.prepare("run", `INSERT INTO "sponsorTimes" VALUES(?, ?, ?, ?)`, [
+        bvID,
+        hashedIP,
+        timeSubmitted,
+        Service.YouTube,
+    ]);
 
-    return res.status(200).send("OK");
+    await db.prepare(
+        "run",
+        `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
+        WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
+        [bvID, biliVideoDetail?.authorId || "", biliVideoDetail?.title || "", biliVideoDetail?.published || 0, bvID]
+    );
+
+    QueryCacher.clearSegmentCache({
+        videoID: bvID,
+        hashedVideoID: hashedBvID,
+        service: Service.YouTube,
+        userID,
+    });
+    newSegments.push({
+        UUID: newUUID,
+        category: s.category,
+        segment: s.segment,
+    });
+
+    return res.json(newSegments);
 }
 
 function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): CheckResult {

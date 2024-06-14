@@ -26,3 +26,7 @@ export function getMatchVideoUUID(
 ): HashedValue {
     return `${getHash(`${bvID}${ytbID}${userID}${biliDuration}${ytbDuration}${timeSubmitted}`, 1)}8` as HashedValue;
 }
+
+export function getPortSegmentUUID(bvID: VideoID, ytbID: VideoID, ytbUUID: string): HashedValue {
+    return `${getHash(`${bvID}${ytbID}${ytbUUID}`)}9` as HashedValue;
+}
