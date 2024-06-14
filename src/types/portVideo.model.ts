@@ -11,4 +11,5 @@ export interface PortVideo {
     hidden: boolean;
     biliDuration: number;
     ytbDuration: number;
+    timeSubmitted: number;
 }

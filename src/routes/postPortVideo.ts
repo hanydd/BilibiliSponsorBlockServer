@@ -14,7 +14,7 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo } from "../types/portVideo.model";
 import { average } from "../utils/array";
-import { getYoutubeSegments, getYoutubeVideoDetail } from "../utils/getYoutubeVideoSegments";
+import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 
 type CheckResult = {
@@ -51,13 +51,14 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     // get ytb video duration
     let ytbDuration = 0 as VideoDuration;
     if (!ytbSegments || ytbSegments.length === 0) {
-        ytbDuration = await getYoutubeVideoDetail(ytbID);
+        ytbDuration = await getYoutubeVideoDuraion(ytbID);
     } else {
         ytbDuration = average(ytbSegments.map((s) => s.videoDuration)) as VideoDuration;
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
     }
 
     // video duration check
+    // we need all three durations to match to proceed
     if (!ytbDuration) {
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
@@ -74,20 +75,18 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(400).send("与YouTube视频时长不一致，无法绑定");
     }
 
-    // TODO: handle duration change
-
     // check existing matches
+    const uuidToHide = new Set();
     const existingMatch: PortVideo[] = await db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration"
-        FROM "portVideo" WHERE "bvID" = ? OR "ytbID" = ?`,
-        [bvID, ytbID]
+        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "timeSubmitted"
+        FROM "portVideo" WHERE "bvID" = ?`,
+        [bvID]
     );
 
     // check if the existing data is exactly the same as the submitted ones
     const exactMatches = existingMatch.filter(
         (port) =>
-            port.bvID == bvID &&
             port.ytbID == ytbID &&
             durationsAllEqual([port.biliDuration, port.ytbDuration, apiBiliDuration, ytbDuration])
     );
@@ -100,31 +99,41 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         }
     }
 
-    // check video availability, if existing matches contain videos that are unavailable, hide them.
-    const uuidToHide = new Set();
-    // ytb videos
-    const bvMatches = existingMatch.filter((p) => p.bvID == bvID && p.votes > -2 && !p.hidden);
-    if (bvMatches.length > 1) {
+    const activeMatches = existingMatch.filter((p) => p.votes > -2 && !p.hidden);
+    // one bvid only can have one active match at a time
+    // use the highes voted or latest submission as active
+    if (activeMatches.length >= 2) {
+        activeMatches.sort((a, b) => b.timeSubmitted - a.timeSubmitted);
+        activeMatches.slice(1).forEach((p) => uuidToHide.add(p.UUID));
         Logger.error(`Multiple PortVideo match found for bvid: ${bvID}`);
     }
-    const allYtbDurations: VideoDuration[] = await Promise.all(bvMatches.map((p) => getYoutubeVideoDetail(p.ytbID)));
-    for (let i = 0; i < allYtbDurations.length; i++) {
-        if (!allYtbDurations[i] || !durationEquals(allYtbDurations[i], bvMatches[i].ytbDuration)) {
-            uuidToHide.add(bvMatches[i].UUID);
+
+    let hasActive = false;
+    if (activeMatches.length > 0) {
+        hasActive = true;
+        // check video availability, if the existing match video is unavailable, hide them.
+        const activeMatch = activeMatches[1];
+        if (!durationEquals(activeMatch.biliDuration, apiBiliDuration)) {
+            // check bili duration
+            uuidToHide.add(activeMatch.UUID);
+            hasActive = false;
+        } else {
+            // check ytb duration
+            const activeMatchYtbDuration = await getYoutubeVideoDuraion(activeMatch.ytbID);
+            if (!durationsAllEqual([activeMatch.ytbDuration, activeMatch.biliDuration, activeMatchYtbDuration])) {
+                uuidToHide.add(activeMatch.UUID);
+                hasActive = false;
+            }
         }
     }
-    // bili videos
-    const ytbMatches = existingMatch.filter(
-        (p) => !uuidToHide.has(p.UUID) && p.ytbID == ytbID && p.votes > -2 && !p.hidden
-    );
-    const allBiliDetails: videoDetails[] = await Promise.all(ytbMatches.map((p) => getVideoDetails(p.bvID)));
-    for (let i = 0; i < allBiliDetails.length; i++) {
-        if (!allBiliDetails[i] || !durationEquals(allBiliDetails[i].duration, ytbMatches[i].biliDuration)) {
-            uuidToHide.add(ytbMatches[i].UUID);
-        }
-    }
+
     if (uuidToHide.size > 0) {
         await db.prepare("run", `UPDATE "portVideo" SET hidden = 1 WHERE "UUID" = ANY(?)`, [Array.from(uuidToHide)]);
+    }
+
+    // don't allow multiple active port video matches to be submitted
+    if (hasActive) {
+        res.status(409).send("已有搬运视频绑定，请先投票，或在QQ群或项目网页反馈");
     }
 
     // prepare to be saved
