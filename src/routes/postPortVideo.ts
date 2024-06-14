@@ -69,9 +69,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
     }
     if (!durationEquals(paramBiliDuration, apiBiliDuration)) {
+        Logger.info(`Submitted bili durations do not match: ${paramBiliDuration}, ${apiBiliDuration}`);
         return res.status(400).send("视频时长异常，请刷新页面重试");
     }
-    if (durationsAllEqual([paramBiliDuration, apiBiliDuration, ytbDuration])) {
+    if (!durationsAllEqual([paramBiliDuration, apiBiliDuration, ytbDuration])) {
+        Logger.info(`bili and Ytb durations do not match: ${paramBiliDuration}, ${ytbDuration}`);
         return res.status(400).send("与YouTube视频时长不一致，无法绑定");
     }
 
