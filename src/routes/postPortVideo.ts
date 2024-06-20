@@ -180,20 +180,18 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     // save all segments
-    const newSegments = [];
     if (ytbSegments?.length == 0) {
         return res.status(200).send("OK");
     }
-    const s = ytbSegments[0];
-    console.log(s);
-    const newUUID = getPortSegmentUUID(bvID, ytbID, s.UUID);
-    await db.prepare(
-        "run",
-        `INSERT INTO "sponsorTimes" ("videoID", "startTime", "endTime", "votes", "locked", "UUID",
-        "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation",
-        "shadowHidden", "hashedVideoID", "userAgent", "description", "ytbID", "ytbSegmentUUID", "portUUID")
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`,
-        [
+
+    const newSegments = [];
+    const sponsorTime = [];
+    const privateSponsorTime = [];
+
+    for (const s of ytbSegments) {
+        const newUUID = getPortSegmentUUID(bvID, ytbID, s.UUID);
+
+        sponsorTime.push([
             bvID,
             s.segment[0],
             s.segment[1],
@@ -215,33 +213,55 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             ytbID,
             s.UUID,
             matchVideoUUID,
-        ]
-    );
-    await privateDB.prepare("run", `INSERT INTO "sponsorTimes" VALUES(?, ?, ?, ?)`, [
-        bvID,
-        hashedIP,
-        timeSubmitted,
-        Service.YouTube,
-    ]);
+        ]);
 
-    await db.prepare(
-        "run",
-        `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
+        privateSponsorTime.push([bvID, hashedIP, timeSubmitted, Service.YouTube]);
+
+        newSegments.push({
+            UUID: newUUID,
+            category: s.category,
+            segment: s.segment,
+        });
+
+        QueryCacher.clearSegmentCache({
+            videoID: bvID,
+            hashedVideoID: hashedBvID,
+            service: Service.YouTube,
+            userID: userID,
+        });
+    }
+
+    try {
+        await db.prepare("run", "BEGIN");
+        await privateDB.prepare("run", "BEGIN");
+
+        await db.prepare(
+            "run",
+            `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
         WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
-        [bvID, biliVideoDetail?.authorId || "", biliVideoDetail?.title || "", biliVideoDetail?.published || 0, bvID]
-    );
+            [bvID, biliVideoDetail?.authorId || "", biliVideoDetail?.title || "", biliVideoDetail?.published || 0, bvID]
+        );
 
-    QueryCacher.clearSegmentCache({
-        videoID: bvID,
-        hashedVideoID: hashedBvID,
-        service: Service.YouTube,
-        userID,
-    });
-    newSegments.push({
-        UUID: newUUID,
-        category: s.category,
-        segment: s.segment,
-    });
+        await db.prepare(
+            "run",
+            `INSERT INTO "sponsorTimes" ("videoID", "startTime", "endTime", "votes", "locked", "UUID",
+            "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation",
+            "shadowHidden", "hashedVideoID", "userAgent", "description", "ytbID", "ytbSegmentUUID", "portUUID")
+            VALUES ${Array(sponsorTime.length).fill("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").join(",")}`,
+            sponsorTime.flat()
+        );
+        await privateDB.prepare(
+            "run",
+            `INSERT INTO "sponsorTimes" ("videoID", "hashedIP", "timeSubmitted", "service")
+         VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
+            privateSponsorTime.flat()
+        );
+        await db.prepare("run", "COMMIT");
+        await privateDB.prepare("run", "COMMIT");
+    } catch (e) {
+        await db.prepare("run", "ROLLBACK");
+        await privateDB.prepare("run", "ROLLBACK");
+    }
 
     return res.json(newSegments);
 }
