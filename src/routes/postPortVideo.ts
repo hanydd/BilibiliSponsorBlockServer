@@ -119,7 +119,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     if (activeMatches.length > 0) {
         hasActive = true;
         // check video availability, if the existing match video is unavailable, hide them.
-        const activeMatch = activeMatches[1];
+        const activeMatch = activeMatches[0];
         if (!durationEquals(activeMatch.biliDuration, apiBiliDuration)) {
             // check bili duration
             uuidToHide.add(activeMatch.UUID);
@@ -184,12 +184,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(200).send("OK");
     }
 
-    const newSegments = [];
     const sponsorTime = [];
     const privateSponsorTime = [];
 
     for (const s of ytbSegments) {
-        const newUUID = getPortSegmentUUID(bvID, ytbID, s.UUID);
+        const newUUID = getPortSegmentUUID(bvID, ytbID, s.UUID, timeSubmitted);
 
         sponsorTime.push([
             bvID,
@@ -216,12 +215,6 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         ]);
 
         privateSponsorTime.push([bvID, hashedIP, timeSubmitted, Service.YouTube]);
-
-        newSegments.push({
-            UUID: newUUID,
-            category: s.category,
-            segment: s.segment,
-        });
 
         QueryCacher.clearSegmentCache({
             videoID: bvID,
@@ -258,12 +251,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         );
         await db.prepare("run", "COMMIT");
         await privateDB.prepare("run", "COMMIT");
-    } catch (e) {
+    } catch (err) {
+        Logger.error(err as string);
         await db.prepare("run", "ROLLBACK");
         await privateDB.prepare("run", "ROLLBACK");
     }
 
-    return res.json(newSegments);
+    return res.json(sponsorTime);
 }
 
 function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): CheckResult {
