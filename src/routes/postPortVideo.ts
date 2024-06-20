@@ -83,7 +83,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     // check existing matches
-    const uuidToHide = new Set();
+    const uuidToHide: Set<string> = new Set();
     const existingMatch: PortVideo[] = await db.prepare(
         "all",
         `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "timeSubmitted"
@@ -135,7 +135,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     if (uuidToHide.size > 0) {
-        await db.prepare("run", `UPDATE "portVideo" SET hidden = 1 WHERE "UUID" = ANY(?)`, [Array.from(uuidToHide)]);
+        await hideOutdatedMatches(Array.from(uuidToHide));
     }
 
     // don't allow multiple active port video matches to be submitted
@@ -309,4 +309,20 @@ function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): C
     }
 
     return CHECK_PASS;
+}
+
+async function hideOutdatedMatches(uuidToHide: string[]) {
+    await db.prepare("run", "BEGIN");
+    try {
+        // delete port video record
+        await db.prepare("run", `UPDATE "portVideo" SET hidden = 1 WHERE "UUID" = ANY(?)`, [uuidToHide]);
+        // delete all related segments
+        await db.prepare("run", `UPDATE "sponsorTimes" SET hidden = 1 WHERE "portUUID" = ANY(?)`, [uuidToHide]);
+
+        await db.prepare("run", "COMMIT");
+    } catch (err) {
+        Logger.error(err as string);
+        await db.prepare("run", "ROLLBACK");
+        throw err;
+    }
 }
