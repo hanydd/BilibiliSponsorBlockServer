@@ -3,11 +3,12 @@ import { config } from "../config";
 import { Request, Response } from "express";
 import axios from "axios";
 import { Logger } from "../utils/logger";
-import { getEdgeUsers } from "../utils/getCWSUsers";
+import { getChromeUsers, getEdgeUsers } from "../utils/getCWSUsers";
 
 // A cache of the number of chrome web store users
 let chromeUsersCache = 0;
 let firefoxUsersCache = 0;
+let egdeUserCache = 0;
 
 // By the privacy friendly user counter
 let apiUsersCache = 0;
@@ -37,7 +38,7 @@ export async function getTotalStats(req: Request, res: Response): Promise<void> 
 
         /* istanbul ignore if */
         if (!row) res.sendStatus(500);
-        const extensionUsers = chromeUsersCache + firefoxUsersCache;
+        const extensionUsers = chromeUsersCache + firefoxUsersCache + egdeUserCache;
 
         //send this result
         res.send({
@@ -46,7 +47,7 @@ export async function getTotalStats(req: Request, res: Response): Promise<void> 
             apiUsers: Math.max(apiUsersCache, extensionUsers),
             viewCount: row.viewCount,
             totalSubmissions: row.totalSubmissions,
-            minutesSaved: row.minutesSaved,
+            minutesSaved: Math.round(row.minutesSaved),
         });
 
         // Check if the cache should be updated (every ~14 hours)
@@ -81,8 +82,9 @@ function updateExtensionUsers() {
             .catch( /* istanbul ignore next */ () => Logger.debug(`Failing to connect to user counter at: ${config.userCounterURL}`));
     }
 
-    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v3/addons/addon/bilisponsorblock/";
+    const mozillaAddonsUrl = "https://addons.mozilla.org/api/v5/addons/addon/bilisponsorblock/";
     const edgeExtId = "khkeolgobhdoloioehjgfpobjnmagfha";
+    const chromeExtId = "eaoelafamejbnggahofapllmfhlhajdd";
 
     axios.get(mozillaAddonsUrl)
         .then(res => firefoxUsersCache = res.data.average_daily_users )
@@ -90,8 +92,15 @@ function updateExtensionUsers() {
             Logger.debug(`Failing to connect to ${mozillaAddonsUrl}`);
             return 0;
         });
-    getEdgeUsers(edgeExtId)
+
+    getChromeUsers(chromeExtId)
         .then(res => chromeUsersCache = res)
+        .catch((err) => {
+            Logger.error(`Error getting Chrome users - ${err}`);
+        });
+
+    getEdgeUsers(edgeExtId)
+        .then(res => egdeUserCache = res)
         .catch((err) => {
             Logger.error(`Error getting Edge users - ${err}`);
         });
