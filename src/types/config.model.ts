@@ -24,6 +24,8 @@ interface RedisReadOnlyConfig extends redis.RedisClientOptions {
 export interface CustomPostgresConfig extends PoolConfig {
     enabled: boolean;
     maxTries: number;
+    db: string,
+    privateDB: string,
 }
 
 export interface CustomWritePostgresConfig extends CustomPostgresConfig {

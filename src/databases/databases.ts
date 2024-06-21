@@ -14,11 +14,11 @@ if (config.postgres?.enabled) {
         createDbIfNotExists: config.createDatabaseIfNotExist,
         postgres: {
             ...config.postgres,
-            database: "sponsorTimes",
+            database: config.postgres.db,
         },
         postgresReadOnly: config.postgresReadOnly ? {
             ...config.postgresReadOnly,
-            database: "sponsorTimes"
+            database: config.postgresReadOnly.db,
         } : null
     });
 
@@ -31,11 +31,11 @@ if (config.postgres?.enabled) {
         postgres: {
             ...config.postgres,
             max: config.postgresPrivateMax ?? config.postgres.max,
-            database: "privateDB"
+            database: config.postgres.privateDB
         },
         postgresReadOnly: config.postgresReadOnly ? {
             ...config.postgresReadOnly,
-            database: "privateDB"
+            database: config.postgresReadOnly.privateDB
         } : null
     });
 } else {
