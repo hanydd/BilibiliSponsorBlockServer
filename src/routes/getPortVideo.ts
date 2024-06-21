@@ -1,17 +1,22 @@
 import { Request, Response } from "express";
 import { db } from "../databases/databases";
 import { PortVideo } from "../types/portVideo.model";
+import { QueryCacher } from "../utils/queryCacher";
+import { portVideoCacheKey } from "../utils/redisKeys";
+import { VideoID } from "../types/segments.model";
 
 export async function getPortVideo(req: Request, res: Response): Promise<Response> {
-    const videoID = req.query.videoID;
+    const videoID = req.query.videoID as VideoID;
 
-    // TODO: use redis cache
-    const portVideoInfo: PortVideo = await db.prepare(
-        "get",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration" FROM "portVideo"
-        WHERE "bvID" = ? AND "hidden" = 0 AND "votes" > -2`,
-        [videoID]
-    );
+    function getPortVideoDB(): Promise<PortVideo> {
+        return db.prepare(
+            "get",
+            `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration" FROM "portVideo"
+            WHERE "bvID" = ? AND "hidden" = 0 AND "votes" > -2`,
+            [videoID]
+        );
+    }
+    const portVideoInfo: PortVideo = await QueryCacher.get(getPortVideoDB, portVideoCacheKey(videoID));
 
-    return res.status(200).json(portVideoInfo);
+    return res.json(portVideoInfo);
 }

@@ -71,3 +71,7 @@ export function userFeatureKey (userID: HashedUserID, feature: Feature): string 
 export function shouldClientCacheKey(key: RedisCommandArgument): boolean {
     return (key as string).match(/^(?:segments\.|reputation\.|branding\.|labels\.)/) !== null;
 }
+
+export function portVideoCacheKey(videoID: VideoID) {
+    return `port.video.${videoID}`;
+}
