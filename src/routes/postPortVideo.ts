@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { HashedIP, Segment, Service, VideoDuration } from "../types/segments.model";
+import { HashedIP, Segment, SegmentUUID, Service, VideoDuration } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
@@ -12,7 +12,7 @@ import { parseUserAgent } from "../utils/userAgent";
 import { getMatchVideoUUID, getPortSegmentUUID, getSubmissionUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
-import { PortVideo } from "../types/portVideo.model";
+import { PortVideo, portVideoUUID } from "../types/portVideo.model";
 import { average } from "../utils/array";
 import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
@@ -102,7 +102,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
             // TODO: count submission as vote
-            return res.status(200).send("OK");
+            return res.json([]);
         }
     }
 
@@ -181,7 +181,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // save all segments
     if (ytbSegments?.length == 0) {
-        return res.status(200).send("OK");
+        return res.json([]);
     }
 
     const sponsorTime = [];
@@ -216,11 +216,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
         privateSponsorTime.push([bvID, hashedIP, timeSubmitted, Service.YouTube]);
 
+        s.UUID = newUUID as string as SegmentUUID;
+        s.videoDuration = paramBiliDuration;
+
         QueryCacher.clearSegmentCache({
             videoID: bvID,
             hashedVideoID: hashedBvID,
             service: Service.YouTube,
-            userID: userID,
         });
     }
 
@@ -257,7 +259,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await privateDB.prepare("run", "ROLLBACK");
     }
 
-    return res.json(sponsorTime);
+    return res.json(ytbSegments);
 }
 
 function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): CheckResult {
