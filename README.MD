@@ -1,41 +1,35 @@
-# SponsorBlock Server
+# B站空降助手服务端
 
-SponsorBlock is an extension that will skip over sponsored segments of YouTube videos. SponsorBlock is a crowdsourced browser extension that let's anyone submit the start and end time's of sponsored segments of YouTube videos. Once one person submits this information, everyone else with this extension will skip right over the sponsored segment.
+B站空降助手是一个帮你跳过视频中恰饭部分的浏览器插件。本项目是插件的服务端代码，移植自YouTube的[Sponsor Block](https://github.com/ajayyy/SponsorBlockServer)。更详细的展示和安装请参考 https://github.com/HanYaodong/BilibiliSponsorBlock。
 
-This is the server backend for it
+本项目并没有对docker部署进行测试。
 
-# Server
+本项目（包括此文档）正在开发中，更多功能敬请期待。
 
-This uses a Postgres or Sqlite database to hold all the timing data.
+# 客户端
 
-To make sure that this project doesn't die, I have made the database publicly downloadable at https://sponsor.ajay.app/database. You can download a backup or get archive.org to take a backup if you do desire. The database is under [this license](https://creativecommons.org/licenses/by-nc-sa/4.0/) unless you get explicit permission from me.
+浏览器插件客户端的项目地址: https://github.com/HanYaodong/BilibiliSponsorBlock
 
-Hopefully this project can be combined with projects like [this](https://github.com/Sponsoff/sponsorship_remover) and use this data to create a neural network to predict when sponsored segments happen. That project is sadly abandoned now, so I have decided to attempt to revive this idea.
+# 构建项目
 
-# Client
+0.  安装node，git，npm，熟悉命令行工具。
 
-The client web browser extension is available here: https://github.com/ajayyy/SponsorBlock
+1.  执行 `npm install` 安装依赖。
 
-# Build Yourself
+2.  将 `config.json.example` 重命名为 `config.json`，并且调整里面的参数。记得删除所有的注释。
 
-This is a node.js server, so clone this repo and run `npm install` to install all dependencies.
+    如果您想要链接postgres数据库，需要在`config.json`文件中配置数据库地址；如果没有配置数据库，那么将会在`database`文件夹中自动创建一个sqlite数据库。
 
-Make sure to put the database files in the `./databases` folder if you want to use a pre-existing database. Otherwise, a fresh database will be created.
+3.  执行 `npm run test` 运行所有测试，执行 `npm run start` 启动项目。
 
-Rename `config.json.example` to `config.json` and fill the parameters inside. Make sure to remove the comments as comments are not supported in JSON.
+# 开发
 
-Ensure all the tests pass with `npm test`
+使用命令 `npm run dev` 启动服务，可以在项目文件发生变化的时候自动重启服务。
 
-Run the server with `npm start`.
+# API 文档
 
-# Developing
+移植部分的代码暂时没有接口文档，可以暂时参考[原项目文档](https://wiki.sponsor.ajay.app/index.php/API_Docs)
 
-If you want to make changes, run `npm run dev` to automatically reload the server and run tests whenever a file is saved.
+# 协议
 
-# API Docs
-
-Available [here](https://wiki.sponsor.ajay.app/index.php/API_Docs)
-
-# License
-
-This is licensed under AGPL-3.0-only.
+本项目遵循 AGPL-3.0 开源协议。
