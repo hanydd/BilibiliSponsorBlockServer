@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { HashedIP, Segment, SegmentUUID, Service, VideoDuration } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { config } from "../config";
 import * as youtubeID from "../utils/youtubeID";
 import * as biliID from "../utils/bilibiliID";
@@ -164,7 +164,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const startingLocked = isVIP ? 1 : 0;
     const reputation = await getReputation(userID);
     const hashedBvID = getHash(bvID, 1);
-    const hashedIP = (await getHashCache(rawIP + config.globalSalt)) as HashedIP;
+    const hashedIP = await getHashedIP(rawIP);
 
     // save match video
     try {
