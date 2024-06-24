@@ -28,7 +28,7 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
 
     if (!portVideoInfo || portVideoInfo.length == 0) {
         return res.sendStatus(404);
-    } else if (portVideoInfo.length >= 1) {
+    } else if (portVideoInfo.length >= 2) {
         // multiple found
         // TODO: mark the highes vote or latest as the only valid record
         Logger.error(`Multiple port video matches found for ${bvID}`);
