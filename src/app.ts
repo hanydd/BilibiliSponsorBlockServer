@@ -58,6 +58,7 @@ import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
 import { getPortVideo } from "./routes/getPortVideo";
 import { postPortVideo } from "./routes/postPortVideo";
+import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 
 export function createServer(callback: () => void): Server {
     // Create a service (the app object is just a callback).
@@ -231,6 +232,7 @@ function setupRoutes(router: Router, server: Server) {
     // port videos
     router.get("/api/portVideo", getPortVideo);
     router.post("/api/portVideo", postPortVideo);
+    router.post("/api/votePort", voteOnPortVideo);
 
     /* istanbul ignore next */
     if (config.postgres?.enabled) {
