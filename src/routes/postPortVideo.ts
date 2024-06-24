@@ -20,6 +20,7 @@ import { getHash } from "../utils/getHash";
 import { getReputation } from "../utils/reputation";
 import { getIP } from "../utils/getIP";
 import { QueryCacher } from "../utils/queryCacher";
+import { acquireLock } from "../utils/redisLock";
 
 type CheckResult = {
     pass: boolean;
@@ -51,6 +52,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
     }
 
+    const lock = await acquireLock(`postPortVideo:${bvID}.${userID}`);
+    if (!lock.status) {
+        return res.status(429).send("已有正在进行的提交！");
+    }
+
     const [ytbSegments, biliVideoDetail] = await Promise.all([getYoutubeSegments(ytbID), getVideoDetails(bvID, true)]);
 
     // get ytb video duration
@@ -65,19 +71,23 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     // video duration check
     // we need all three durations to match to proceed
     if (!ytbDuration) {
+        lock.unlock();
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
     }
     const apiBiliDuration = biliVideoDetail?.duration as VideoDuration;
     if (!paramBiliDuration || !apiBiliDuration) {
+        lock.unlock();
         return res.status(400).send(`无法获取B站视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
     }
     if (!durationEquals(paramBiliDuration, apiBiliDuration)) {
+        lock.unlock();
         Logger.info(`Submitted bili durations do not match: ${paramBiliDuration}, ${apiBiliDuration}`);
         return res.status(400).send("视频时长异常，请刷新页面重试");
     }
     if (!durationsAllEqual([paramBiliDuration, apiBiliDuration, ytbDuration])) {
+        lock.unlock();
         Logger.info(`bili and Ytb durations do not match: ${paramBiliDuration}, ${ytbDuration}`);
         return res.status(400).send("与YouTube视频时长不一致，无法绑定");
     }
@@ -98,6 +108,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             durationsAllEqual([port.biliDuration, port.ytbDuration, apiBiliDuration, ytbDuration])
     );
     if (exactMatches.length > 0) {
+        lock.unlock();
         if (exactMatches.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
@@ -140,7 +151,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // don't allow multiple active port video matches to be submitted
     if (hasActive) {
-        res.status(409).send("已有搬运视频绑定，请先投票，或在QQ群或项目网页反馈");
+        lock.unlock();
+        return res.status(409).send("已有搬运视频绑定，请先投票，或在QQ群反馈");
     }
 
     // prepare to be saved
@@ -175,12 +187,14 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             ]
         );
     } catch (err) {
+        lock.unlock();
         Logger.error(err as string);
         return res.sendStatus(500);
     }
 
     // save all segments
     if (ytbSegments?.length == 0) {
+        lock.unlock();
         return res.json([]);
     }
 
@@ -259,6 +273,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await privateDB.prepare("run", "ROLLBACK");
     }
 
+    lock.unlock();
     return res.json(ytbSegments);
 }
 
