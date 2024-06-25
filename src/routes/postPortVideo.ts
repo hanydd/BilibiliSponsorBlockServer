@@ -187,6 +187,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
                 0,
             ]
         );
+        await privateDB.prepare(
+            "run",
+            `INSERT INTO "portVideo" ("bvID", "UUID", "hashedIP", "timeSubmitted") VALUES (?,?,?,?)`,
+            [bvID, matchVideoUUID, hashedIP, timeSubmitted]
+        );
     } catch (err) {
         lock.unlock();
         Logger.error(err as string);
