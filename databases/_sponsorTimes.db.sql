@@ -18,7 +18,10 @@ CREATE TABLE IF NOT EXISTS "sponsorTimes" (
 	"timeSubmitted"	INTEGER NOT NULL,
 	"views"	INTEGER NOT NULL,
 	"category" TEXT NOT NULL,
-	"shadowHidden"	INTEGER NOT NULL
+	"shadowHidden"	INTEGER NOT NULL,
+	"ytbID" TEXT,
+	"ytbSegmentUUID" TEXT,
+	"portUUID" TEXT
 );
 
 CREATE TABLE IF NOT EXISTS "userNames" (
@@ -82,6 +85,20 @@ CREATE TABLE IF NOT EXISTS "thumbnailVotes" (
 	"locked"	INTEGER NOT NULL default 0,
 	"shadowHidden"	INTEGER NOT NULL default 0,
 	FOREIGN KEY("UUID") REFERENCES "thumbnails"("UUID")
+);
+
+CREATE TABLE IF NOT EXISTS "portVideo" (
+	"bvID" TEXT NOT NULL,
+	"ytbID" TEXT NOT NULL,
+	"biliDuration" REAL NOT NULL,
+	"ytbDuration" REAL NOT NULL,
+	"UUID" TEXT NOT NULL PRIMARY KEY,
+	"hidden" INTEGER NOT NULL default 0,
+	"votes" INTEGER NOT NULL default 0,
+	"locked" INTEGER NOT NULL default 0,
+	"userID" TEXT NOT NULL,
+	"timeSubmitted" INTEGER NOT NULL,
+	"userAgent" TEXT
 );
 
 CREATE EXTENSION IF NOT EXISTS pgcrypto; --!sqlite-ignore
