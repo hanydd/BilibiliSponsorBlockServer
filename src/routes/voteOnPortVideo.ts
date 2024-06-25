@@ -21,10 +21,10 @@ export async function voteOnPortVideo(req: Request, res: Response): Promise<Resp
 
     // check params
     if (!UUID || !bvID || !paramUserID || type == undefined) {
-        return res.status(400).send("参数错误");
+        return res.status(400).send("缺少参数");
     }
     if (!validate(bvID)) {
-        return res.status(400).send("视频ID有误");
+        return res.status(400).send("视频BV号有误");
     }
     if (paramUserID.length < config.minUserIDLength) {
         return res.status(400).send("用户ID有误");
@@ -32,7 +32,7 @@ export async function voteOnPortVideo(req: Request, res: Response): Promise<Resp
     // lock
     const lock = await acquireLock(`voteOnPortVideo:${UUID}.${paramUserID}`);
     if (!lock.status) {
-        return res.status(429).send("Vote already in progress");
+        return res.status(429).send("正在投票中……");
     }
 
     // vote logic
