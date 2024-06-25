@@ -1,18 +1,17 @@
 import { Request, Response } from "express";
-import { HashedIP, Segment, SegmentUUID, Service, VideoDuration } from "../types/segments.model";
+import { SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { config } from "../config";
 import * as youtubeID from "../utils/youtubeID";
 import * as biliID from "../utils/bilibiliID";
-import axios from "axios";
-import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails } from "../utils/getVideoDetails";
 import { parseUserAgent } from "../utils/userAgent";
-import { getMatchVideoUUID, getPortSegmentUUID, getSubmissionUUID } from "../utils/getSubmissionUUID";
+import { getMatchVideoUUID, getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
-import { PortVideo, portVideoUUID } from "../types/portVideo.model";
+import { PortVideo } from "../types/portVideo.model";
 import { average } from "../utils/array";
 import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
@@ -21,6 +20,7 @@ import { getReputation } from "../utils/reputation";
 import { getIP } from "../utils/getIP";
 import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../utils/redisLock";
+import { vote as votePortVideo } from "./voteOnPortVideo";
 
 type CheckResult = {
     pass: boolean;
@@ -112,7 +112,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         if (exactMatches.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
-            // TODO: count submission as vote
+            await votePortVideo(exactMatches[0].UUID, bvID, paramUserID, VoteType.Upvote, rawIP);
+            // TODO: return segments
             return res.json([]);
         }
     }
