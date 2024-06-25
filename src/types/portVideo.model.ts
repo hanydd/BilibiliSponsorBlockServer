@@ -1,4 +1,4 @@
-import { HashedIP, VideoID, VoteType } from "./segments.model";
+import { HashedIP, HiddenType, VideoID, VoteType } from "./segments.model";
 import { HashedUserID } from "./user.model";
 
 export type portVideoUUID = string & { __portVideoUUIDBrand: unknown };
@@ -9,7 +9,7 @@ export interface PortVideo {
     UUID: portVideoUUID;
     votes: number;
     locked: boolean;
-    hidden: boolean;
+    hidden: HiddenType;
     biliDuration: number;
     ytbDuration: number;
     timeSubmitted: number;

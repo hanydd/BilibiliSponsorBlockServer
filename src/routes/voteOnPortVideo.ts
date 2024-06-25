@@ -1,10 +1,10 @@
 import { Request, Response } from "express";
-import { IPAddress, VideoID, VoteType } from "../types/segments.model";
+import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { getIP } from "../utils/getIP";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { AcquiredLock, acquireLock } from "../utils/redisLock";
-import { PortVideo, PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
+import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
 import { db, privateDB } from "../databases/databases";
 import { validate } from "../utils/bilibiliID";
 import { isUserVIP } from "../utils/isUserVIP";
@@ -136,6 +136,20 @@ export async function vote(
         }
 
         await db.prepare("run", `UPDATE "portVideo" SET "votes" = ? WHERE "UUID" = ?`, [newVote, UUID]);
+
+        if (newVote <= -2) {
+            // mark all segments as hidden
+            await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "portUUID" = ?`, [
+                HiddenType.MismatchHidden,
+                UUID,
+            ]);
+        } else if (newVote > -2 && oldVote <= -2) {
+            await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "portUUID" = ? AND hidden = ?`, [
+                HiddenType.Show,
+                UUID,
+                HiddenType.MismatchHidden,
+            ]);
+        }
     } catch (err) {
         Logger.error(err as string);
         return { lock, status: 500 };
