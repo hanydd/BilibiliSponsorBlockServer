@@ -247,9 +247,6 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     try {
-        await db.prepare("run", "BEGIN");
-        await privateDB.prepare("run", "BEGIN");
-
         await db.prepare(
             "run",
             `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
@@ -271,12 +268,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
          VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
             privateSponsorTime.flat()
         );
-        await db.prepare("run", "COMMIT");
-        await privateDB.prepare("run", "COMMIT");
     } catch (err) {
         Logger.error(err as string);
-        await db.prepare("run", "ROLLBACK");
-        await privateDB.prepare("run", "ROLLBACK");
     }
 
     lock.unlock();
