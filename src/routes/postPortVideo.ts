@@ -1,4 +1,4 @@
-import { Request, Response } from "express";
+import { Request, Response, query } from "express";
 import { SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
@@ -41,6 +41,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) ||
         0) as VideoDuration;
     const rawIP = getIP(req);
+
+    const hashedBvID = getHash(bvID, 1);
 
     if (!paramUserID) {
         return res.status(400).send("No userID provided");
@@ -148,6 +150,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     if (uuidToHide.size > 0) {
         await hideOutdatedMatches(Array.from(uuidToHide));
+        QueryCacher.clearSegmentCache({ videoID: bvID, hashedVideoID: hashedBvID, service: Service.YouTube });
     }
 
     // don't allow multiple active port video matches to be submitted
@@ -164,7 +167,6 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const startingVotes = 0;
     const startingLocked = isVIP ? 1 : 0;
     const reputation = await getReputation(userID);
-    const hashedBvID = getHash(bvID, 1);
     const hashedIP = await getHashedIP(rawIP);
 
     // save match video
@@ -196,6 +198,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         lock.unlock();
         Logger.error(err as string);
         return res.sendStatus(500);
+    } finally {
+        QueryCacher.clearPortVideoCache(bvID);
     }
 
     // save all segments
@@ -238,13 +242,8 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
         s.UUID = newUUID as string as SegmentUUID;
         s.videoDuration = paramBiliDuration;
-
-        QueryCacher.clearSegmentCache({
-            videoID: bvID,
-            hashedVideoID: hashedBvID,
-            service: Service.YouTube,
-        });
     }
+    QueryCacher.clearSegmentCache({ videoID: bvID, hashedVideoID: hashedBvID, service: Service.YouTube });
 
     try {
         await db.prepare(
@@ -322,17 +321,13 @@ function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): C
 }
 
 async function hideOutdatedMatches(uuidToHide: string[]) {
-    await db.prepare("run", "BEGIN");
     try {
         // delete port video record
         await db.prepare("run", `UPDATE "portVideo" SET hidden = 1 WHERE "UUID" = ANY(?)`, [uuidToHide]);
         // delete all related segments
         await db.prepare("run", `UPDATE "sponsorTimes" SET hidden = 1 WHERE "portUUID" = ANY(?)`, [uuidToHide]);
-
-        await db.prepare("run", "COMMIT");
     } catch (err) {
         Logger.error(err as string);
-        await db.prepare("run", "ROLLBACK");
         throw err;
     }
 }
