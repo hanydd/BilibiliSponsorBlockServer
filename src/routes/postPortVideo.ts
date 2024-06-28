@@ -1,4 +1,4 @@
-import { Request, Response, query } from "express";
+import { Request, Response } from "express";
 import { SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
@@ -249,7 +249,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await db.prepare(
             "run",
             `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
-        WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
+            WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
             [bvID, biliVideoDetail?.authorId || "", biliVideoDetail?.title || "", biliVideoDetail?.published || 0, bvID]
         );
 
@@ -264,7 +264,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await privateDB.prepare(
             "run",
             `INSERT INTO "sponsorTimes" ("videoID", "hashedIP", "timeSubmitted", "service")
-         VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
+            VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
             privateSponsorTime.flat()
         );
     } catch (err) {
@@ -308,11 +308,11 @@ function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): C
 
     if (invalidFields.length !== 0) {
         // invalid request
-        const formattedFields = invalidFields.reduce((p, c, i) => p + (i !== 0 ? ", " : "") + c, "");
-        const formattedErrors = errors.reduce((p, c, i) => p + (i !== 0 ? ". " : " ") + c, "");
+        const formattedFields = invalidFields.join(", ");
+        const formattedErrors = errors.join(". ");
         return {
             pass: false,
-            errorMessage: `No valid ${formattedFields}.${formattedErrors}`,
+            errorMessage: `No valid ${formattedFields}. ${formattedErrors}`,
             errorCode: 400,
         };
     }
