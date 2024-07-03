@@ -82,7 +82,7 @@ export async function vote(
 
     // vote
     // get existing vote record
-    const voteRow: PortVideoVotesDB = await privateDB.prepare(
+    const existingVoteRow: PortVideoVotesDB = await privateDB.prepare(
         "get",
         `SELECT * FROM "portVideoVotes" WHERE "UUID" = ? AND "userID" = ?`,
         [UUID, userID],
@@ -92,25 +92,35 @@ export async function vote(
     // calculate new votes
     let newVote = portVideo.votes;
     const oldVote = portVideo.votes;
-    const oldType = voteRow?.type;
+    const oldType = existingVoteRow?.type;
 
     if (type === oldType) {
         // discard repeating vote
         return { status: 200 };
     } else if (type == VoteType.Upvote) {
-        newVote += 1;
+        if (oldType == VoteType.Downvote) {
+            // redo downvote
+            newVote += 2;
+        } else {
+            newVote += 1;
+        }
     } else if (type == VoteType.Downvote && !hasVipRight) {
-        newVote -= 1;
+        if (oldType == VoteType.Upvote) {
+            // redo upvote
+            newVote -= 2;
+        } else {
+            newVote -= 1;
+        }
     } else if (type == VoteType.Downvote && hasVipRight) {
         newVote = -2;
         type = VoteType.ExtraDownvote;
-    } else if (type == VoteType.Undo && voteRow) {
+    } else if (type == VoteType.Undo && existingVoteRow) {
         if (oldType == VoteType.Upvote) {
             newVote -= 1;
         } else if (oldType == VoteType.Downvote) {
             newVote += 1;
         } else if (oldType == VoteType.ExtraDownvote) {
-            newVote = voteRow.originalVotes;
+            newVote = existingVoteRow.originalVotes;
         }
     }
 
@@ -122,12 +132,12 @@ export async function vote(
     // save to database
     try {
         const timeSubmitted = Date.now();
-        if (voteRow) {
+        if (existingVoteRow) {
             await privateDB.prepare(
                 "run",
                 `UPDATE "portVideoVotes" SET "type" = ?, "originalVotes" = ?, "originalType" = ?,
                 "hashedIP" = ?, "timeSubmitted" = ? WHERE id = ?`,
-                [type, oldVote, oldType, hashedIP, timeSubmitted, voteRow.id]
+                [type, oldVote, oldType, hashedIP, timeSubmitted, existingVoteRow.id]
             );
         } else {
             await privateDB.prepare(
