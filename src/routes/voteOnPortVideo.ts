@@ -3,7 +3,7 @@ import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.mode
 import { HashedUserID, UserID } from "../types/user.model";
 import { getIP } from "../utils/getIP";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
-import { AcquiredLock, acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../utils/redisLock";
 import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
 import { db, privateDB } from "../databases/databases";
 import { validate } from "../utils/bilibiliID";
@@ -50,14 +50,17 @@ export async function voteOnPortVideo(req: Request, res: Response): Promise<Resp
     }
 }
 
+/**
+ * Vote on a port video match record.
+ * This function is not thread safe, external locks are recommended to prevent racing conditions
+ */
 export async function vote(
     UUID: portVideoUUID,
     bvID: VideoID,
     paramUserID: UserID,
     type: VoteType,
-    ip: IPAddress,
-    lock: AcquiredLock = null
-): Promise<{ lock: AcquiredLock; status: number; message?: string; json?: string }> {
+    ip: IPAddress
+): Promise<{ status: number; message?: string; json?: string }> {
     const userID = (await getHashCache(paramUserID)) as HashedUserID;
     const hashedIP = await getHashedIP(ip);
     const isVip = await isUserVIP(userID);
@@ -65,14 +68,14 @@ export async function vote(
 
     // get record and check params
     if (type != VoteType.Upvote && type != VoteType.Downvote && type != VoteType.Undo) {
-        return { lock, status: 400, message: "不支持的类型" };
+        return { status: 400, message: "不支持的类型" };
     }
     const portVideo = (await db.prepare("get", `SELECT * FROM "portVideo" WHERE "UUID" = ?`, [UUID])) as PortVideoDB;
     if (!portVideo) {
-        return { lock, status: 404 };
+        return { status: 404 };
     }
     if (portVideo.bvID != bvID) {
-        return { lock, status: 400, message: "视频信息不匹配！" };
+        return { status: 400, message: "视频信息不匹配！" };
     }
     const isOwnSubmission = portVideo.userID === userID;
     const hasVipRight = isVip || isTempVIP || isOwnSubmission;
@@ -92,8 +95,8 @@ export async function vote(
     const oldType = voteRow?.type;
 
     if (type === oldType) {
-        // discard repeat vote
-        return { lock, status: 200 };
+        // discard repeating vote
+        return { status: 200 };
     } else if (type == VoteType.Upvote) {
         newVote += 1;
     } else if (type == VoteType.Downvote && !hasVipRight) {
@@ -113,7 +116,7 @@ export async function vote(
 
     if (newVote === oldVote) {
         // no change in votes, skip
-        return { lock, status: 200 };
+        return { status: 200 };
     }
 
     // save to database
@@ -152,7 +155,7 @@ export async function vote(
         }
     } catch (err) {
         Logger.error(err as string);
-        return { lock, status: 500 };
+        return { status: 500 };
     }
-    return { lock, status: 200 };
+    return { status: 200 };
 }
