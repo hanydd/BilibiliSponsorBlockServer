@@ -19,9 +19,6 @@ CREATE TABLE IF NOT EXISTS "portVideoVotes" (
 	"timeSubmitted" INTEGER NOT NULL
 );
 
-CREATE INDEX IF NOT EXISTS "portVideoVotes_UUID"
-    ON "portVideoVotes" USING btree ("UUID", "userID");
-
 
 UPDATE "config" SET value = 12 WHERE key = 'version';
 

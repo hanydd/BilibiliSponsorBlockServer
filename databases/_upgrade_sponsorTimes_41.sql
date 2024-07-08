@@ -18,14 +18,6 @@ CREATE TABLE IF NOT EXISTS "portVideo" (
 	"userAgent" TEXT
 );
 
-CREATE INDEX IF NOT EXISTS "portVideo_bvid"
-    ON "portVideo" USING btree ("bvID" ASC, "hidden" ASC, "votes" ASC);
-
-CREATE INDEX IF NOT EXISTS "portVideo_ytbid"
-    ON "portVideo" USING btree ("ytbID" ASC, "hidden" ASC, "votes" ASC);
-
-CREATE INDEX IF NOT EXISTS "sponsorTimes_portUUID"
-    ON "sponsorTimes" USING btree ("portUUID" ASC);
 
 UPDATE "config" SET value = 41 WHERE key = 'version';
 
