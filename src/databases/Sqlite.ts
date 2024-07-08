@@ -13,7 +13,7 @@ export class Sqlite implements IDatabase {
     }
 
     // eslint-disable-next-line require-await
-    async prepare(type: QueryType, query: string, params: any[] = []): Promise<any[]> {
+    async prepare(type: QueryType, query: string, params: any[] = []): Promise<any | any[]> {
         // Logger.debug(`prepare (sqlite): type: ${type}, query: ${query}, params: ${params}`);
         const preparedQuery = this.db.prepare(Sqlite.processQuery(query));
 
@@ -45,17 +45,25 @@ export class Sqlite implements IDatabase {
         }
 
         if (!this.config.readOnly) {
-            this.db.function("sha256", (str: string) => {
-                return getHash(str, 1);
-            });
+            // TODO: remove this type casting wrapper
+            const wrapper = (...params: unknown[]) :unknown => {
+                if (typeof params[0] === "string") {
+                    return getHash(params[0], 1);
+                }
+            };
+            this.db.function("sha256", wrapper);
 
             // Upgrade database if required
             Sqlite.upgradeDB(this.db, this.config.fileNamePrefix, this.config.dbSchemaFolder);
         }
 
-        this.db.function("regexp", { deterministic: true }, (regex: string, str: string) => {
-            return str.match(regex) ? 1 : 0;
-        });
+        // TODO: remove this type casting wrapper
+        const wrapper = (...params: unknown[]) :unknown => {
+            if (params.length == 2 && typeof params[0] === "string" && typeof params[1] === "string") {
+                return params[1].match(params[0]) ? 1 : 0;
+            }
+        };
+        this.db.function("regexp", { deterministic: true }, wrapper);
 
         // Enable WAL mode checkpoint number
         if (this.config.enableWalCheckpointNumber) {
@@ -86,7 +94,7 @@ export class Sqlite implements IDatabase {
 
     private static upgradeDB(db: Database, fileNamePrefix: string, schemaFolder: string) {
         const versionCodeInfo = db.prepare("SELECT value FROM config WHERE key = ?").get("version");
-        let versionCode = versionCodeInfo ? versionCodeInfo.value : 0;
+        let versionCode = versionCodeInfo ? (versionCodeInfo as {value: any}).value : 0;
 
         let path = `${schemaFolder}/_upgrade_${fileNamePrefix}_${(parseInt(versionCode) + 1)}.sql`;
         Logger.debug(`db update: trying ${path}`);
@@ -94,7 +102,7 @@ export class Sqlite implements IDatabase {
             Logger.debug(`db update: updating ${path}`);
             db.exec(this.processUpgradeQuery(fs.readFileSync(path).toString()));
 
-            versionCode = db.prepare("SELECT value FROM config WHERE key = ?").get("version").value;
+            versionCode = (db.prepare("SELECT value FROM config WHERE key = ?").get("version") as {value: any}).value;
             path = `${schemaFolder}/_upgrade_${fileNamePrefix}_${(parseInt(versionCode) + 1)}.sql`;
             Logger.debug(`db update: trying ${path}`);
         }
