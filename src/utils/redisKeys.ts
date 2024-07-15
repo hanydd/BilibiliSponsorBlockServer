@@ -75,3 +75,7 @@ export function shouldClientCacheKey(key: RedisCommandArgument): boolean {
 export function getTopUserKey(sortBy: string, categoryStatsEnabled: boolean): string {
     return `topUsers.${sortBy}.${categoryStatsEnabled}`;
 }
+
+export function getTopCategoryUserKey(sortBy: string, category: string): string {
+    return `topCategoryUsers.${sortBy}.${category}`;
+}
