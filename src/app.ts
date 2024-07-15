@@ -53,7 +53,6 @@ import { getBranding, getBrandingByHashEndpoint } from "./routes/getBranding";
 import { postBranding } from "./routes/postBranding";
 import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
-import { getTopBrandingUsers } from "./routes/getTopBrandingUsers";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
 
@@ -145,7 +144,6 @@ function setupRoutes(router: Router, server: Server) {
 
     router.get("/api/getTopUsers", getTopUsers);
     router.get("/api/getTopCategoryUsers", getTopCategoryUsers);
-    router.get("/api/getTopBrandingUsers", getTopBrandingUsers);
 
     //send out totals
     //send the total submissions, total views and total minutes saved
