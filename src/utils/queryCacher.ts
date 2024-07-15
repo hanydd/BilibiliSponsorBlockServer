@@ -5,7 +5,7 @@ import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { Feature, HashedUserID, UserID } from "../types/user.model";
 import { config } from "../config";
 
-async function get<T>(fetchFromDB: () => Promise<T>, key: string): Promise<T> {
+async function get<T>(fetchFromDB: () => Promise<T>, key: string, ttl = 0): Promise<T> {
     try {
         const reply = await redis.getWithCache(key);
         if (reply) {
@@ -21,7 +21,7 @@ async function get<T>(fetchFromDB: () => Promise<T>, key: string): Promise<T> {
 
     const data = await fetchFromDB();
 
-    redis.setExWithCache(key, config.redis?.expiryTime, JSON.stringify(data)).catch((err) => Logger.error(err));
+    redis.setExWithCache(key,  ttl || config.redis?.expiryTime, JSON.stringify(data)).catch((err) => Logger.error(err));
 
     return data;
 }

@@ -1,12 +1,10 @@
 import { db } from "../databases/databases";
-import { createMemoryCache } from "../utils/createMemoryCache";
 import { config } from "../config";
 import { Request, Response } from "express";
 import { Logger } from "../utils/logger";
+import { QueryCacher } from "../utils/queryCacher";
+import { getTopUserKey } from "../utils/redisKeys";
 
-const MILLISECONDS_IN_MINUTE = 60000;
-// eslint-disable-next-line @typescript-eslint/no-misused-promises
-const getTopUsersWithCache = createMemoryCache(generateTopUsersStats, config.getTopUsersCacheTimeMinutes * MILLISECONDS_IN_MINUTE);
 const maxRewardTimePerSegmentInSeconds = config.maxRewardTimePerSegmentInSeconds ?? 86400;
 
 async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = false) {
@@ -80,7 +78,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
 
 export async function getTopUsers(req: Request, res: Response): Promise<Response> {
     const sortType = parseInt(req.query.sortType as string);
-    const categoryStatsEnabled = req.query.categoryStats;
+    const categoryStatsEnabled = req.query.categoryStats === "true";
 
     //setup which sort type to use
     let sortBy = "";
@@ -100,7 +98,11 @@ export async function getTopUsers(req: Request, res: Response): Promise<Response
     }
 
     try {
-        const stats = await getTopUsersWithCache(sortBy, categoryStatsEnabled);
+        const stats = await QueryCacher.get(
+            () => generateTopUsersStats(sortBy, categoryStatsEnabled),
+            getTopUserKey(sortBy, categoryStatsEnabled),
+            config.getTopUsersCacheTimeMinutes * 60
+        );
 
         //send this result
         return res.send(stats);
