@@ -11,7 +11,7 @@ import { parseUserAgent } from "../utils/userAgent";
 import { getMatchVideoUUID, getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
-import { PortVideo } from "../types/portVideo.model";
+import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { average } from "../utils/array";
 import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
@@ -115,8 +115,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
             await votePortVideo(exactMatches[0].UUID, bvID, paramUserID, VoteType.Upvote, rawIP);
-            // TODO: return segments
-            return res.json([]);
+            return res.json({
+                bvID: exactMatches[0].bvID,
+                ytbID: exactMatches[0].ytbID,
+                UUID: exactMatches[0].UUID,
+                votes: exactMatches[0].votes,
+                locked: exactMatches[0].locked,
+            } as PortVideoInterface);
         }
     }
 
@@ -205,7 +210,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     // save all segments
     if (ytbSegments?.length == 0) {
         lock.unlock();
-        return res.json([]);
+        return res.json({
+            bvID,
+            ytbID,
+            UUID: matchVideoUUID,
+            votes: startingVotes,
+            locked: !!startingLocked,
+        } as PortVideoInterface);
     }
 
     const sponsorTime = [];
@@ -239,9 +250,6 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         ]);
 
         privateSponsorTime.push([bvID, hashedIP, timeSubmitted, Service.YouTube]);
-
-        s.UUID = newUUID as string as SegmentUUID;
-        s.videoDuration = paramBiliDuration;
     }
     QueryCacher.clearSegmentCache({ videoID: bvID, hashedVideoID: hashedBvID, service: Service.YouTube });
 
@@ -272,7 +280,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     }
 
     lock.unlock();
-    return res.json(ytbSegments);
+    return res.json({
+        bvID,
+        ytbID,
+        UUID: matchVideoUUID,
+        votes: startingVotes,
+        locked: !!startingLocked,
+    } as PortVideoInterface);
 }
 
 function checkInvalidFields(bvID: string, ytbID: string, paramUserID: string): CheckResult {

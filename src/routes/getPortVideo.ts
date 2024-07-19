@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../databases/databases";
-import { PortVideo } from "../types/portVideo.model";
+import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { QueryCacher } from "../utils/queryCacher";
 import { portVideoCacheKey } from "../utils/redisKeys";
 import { VideoID } from "../types/segments.model";
@@ -33,5 +33,11 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
         // TODO: mark the highes vote or latest as the only valid record
         Logger.error(`Multiple port video matches found for ${bvID}`);
     }
-    return res.json(portVideoInfo[0]);
+    return res.json({
+        bvID: portVideoInfo[0].bvID,
+        ytbID: portVideoInfo[0].ytbID,
+        UUID: portVideoInfo[0].UUID,
+        votes: portVideoInfo[0].votes,
+        locked: portVideoInfo[0].locked,
+    } as PortVideoInterface);
 }

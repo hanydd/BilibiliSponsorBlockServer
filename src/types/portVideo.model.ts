@@ -3,6 +3,17 @@ import { HashedUserID } from "./user.model";
 
 export type portVideoUUID = string & { __portVideoUUIDBrand: unknown };
 
+/**
+ * Data interface sent to the client
+ */
+export interface PortVideoInterface {
+    bvID: VideoID;
+    ytbID: VideoID;
+    UUID: string;
+    votes: number;
+    locked: boolean;
+}
+
 export interface PortVideo {
     bvID: VideoID;
     ytbID: VideoID;
