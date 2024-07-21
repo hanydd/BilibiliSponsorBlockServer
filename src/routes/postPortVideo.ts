@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
+import { HiddenType, SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
@@ -111,9 +111,12 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     );
     if (exactMatches.length > 0) {
         lock.unlock();
-        if (exactMatches.filter((s) => s.votes <= -2 || s.hidden).length > 0) {
+        if (exactMatches.filter((s) => s.hidden != HiddenType.Show).length > 0) {
+            // only check hidden flag, not votes
+            // if the record is only hidden due to downvotes, re-show it
             return res.status(409).send("此YouTube视频已被标记为错误的搬运视频！");
         } else {
+            // duplicated submission count as upvote
             await votePortVideo(exactMatches[0].UUID, bvID, paramUserID, VoteType.Upvote, rawIP);
             return res.json({
                 bvID: exactMatches[0].bvID,
