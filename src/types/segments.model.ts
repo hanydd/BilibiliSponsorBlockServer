@@ -67,7 +67,7 @@ export interface DBSegment {
     votes: number;
     views: number;
     locked: boolean;
-    hidden: boolean;
+    hidden: HiddenType;
     required: boolean; // Requested specifically from the client
     shadowHidden: Visibility;
     videoID: VideoID;
@@ -126,11 +126,16 @@ export enum SortableFields {
     views = "views",
 }
 
-
 export enum VoteType {
     Downvote = 0,
     Upvote = 1,
     ExtraDownvote = 2,
     Undo = 20,
     Malicious = 30
+}
+
+export enum HiddenType {
+    Show = 0,
+    Hidden = 1,
+    MismatchHidden = 2, // hidden due to port video downvote
 }

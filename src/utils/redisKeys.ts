@@ -79,3 +79,7 @@ export function getTopUserKey(sortBy: string, categoryStatsEnabled: boolean): st
 export function getTopCategoryUserKey(sortBy: string, category: string): string {
     return `topCategoryUsers.${sortBy}.${category}`;
 }
+
+export function portVideoCacheKey(videoID: VideoID) {
+    return `port.video.${videoID}`;
+}

@@ -1,6 +1,6 @@
 import redis, { TooManyActiveConnectionsError } from "../utils/redis";
 import { Logger } from "../utils/logger";
-import { skipSegmentsHashKey, skipSegmentsKey, reputationKey, ratingHashKey, skipSegmentGroupsKey, userFeatureKey, videoLabelsKey, videoLabelsHashKey, brandingHashKey, brandingKey } from "./redisKeys";
+import { skipSegmentsHashKey, skipSegmentsKey, reputationKey, ratingHashKey, skipSegmentGroupsKey, userFeatureKey, videoLabelsKey, videoLabelsHashKey, brandingHashKey, brandingKey, portVideoCacheKey } from "./redisKeys";
 import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { Feature, HashedUserID, UserID } from "../types/user.model";
 import { config } from "../config";
@@ -161,6 +161,10 @@ function clearFeatureCache(userID: HashedUserID, feature: Feature): void {
     redis.del(userFeatureKey(userID, feature)).catch((err) => Logger.error(err));
 }
 
+function clearPortVideoCache(videoID: VideoID) {
+    redis.del(portVideoCacheKey(videoID)).catch((err) => Logger.error(err));
+}
+
 export const QueryCacher = {
     get,
     getTraced,
@@ -170,4 +174,5 @@ export const QueryCacher = {
     getKeyLastModified,
     clearRatingCache,
     clearFeatureCache,
+    clearPortVideoCache,
 };

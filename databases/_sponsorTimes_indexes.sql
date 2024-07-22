@@ -35,6 +35,9 @@ CREATE INDEX IF NOT EXISTS "sponsorTimes_description_gin"
     ("description" COLLATE pg_catalog."default" gin_trgm_ops, category COLLATE pg_catalog."default" gin_trgm_ops)
     TABLESPACE pg_default;
 
+CREATE INDEX IF NOT EXISTS "sponsorTimes_portUUID"
+    ON "sponsorTimes" USING btree ("portUUID" ASC);
+
 -- userNames
 
 CREATE INDEX IF NOT EXISTS "userNames_userID"
@@ -174,3 +177,11 @@ CREATE INDEX IF NOT EXISTS "thumbnailVotes_votes"
     ON public."thumbnailVotes" USING btree
     ("UUID" COLLATE pg_catalog."default" ASC NULLS LAST, "votes" DESC NULLS LAST)
     TABLESPACE pg_default;
+
+-- portVideo
+
+CREATE INDEX IF NOT EXISTS "portVideo_bvid"
+    ON "portVideo" USING btree ("bvID" ASC, "hidden" ASC, "votes" ASC);
+
+CREATE INDEX IF NOT EXISTS "portVideo_ytbid"
+    ON "portVideo" USING btree ("ytbID" ASC, "hidden" ASC, "votes" ASC);

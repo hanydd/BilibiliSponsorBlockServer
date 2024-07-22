@@ -44,4 +44,23 @@ CREATE TABLE IF NOT EXISTS "thumbnailVotes" (
 	"type"	INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS "portVideo" (
+	"bvID" TEXT NOT NULL,
+	"UUID" TEXT PRIMARY KEY,
+	"hashedIP" TEXT NOT NULL,
+	"timeSubmitted" INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS "portVideoVotes" (
+	"id" SERIAL PRIMARY KEY,
+	"bvID" TEXT NOT NULL,
+	"UUID" TEXT NOT NULL,
+	"type" INTEGER NOT NULL,
+	"originalType" INTEGER,
+	"originalVotes" INTEGER,
+	"userID" TEXT NOT NULL,
+	"hashedIP" TEXT NOT NULL,
+	"timeSubmitted" INTEGER NOT NULL
+);
+
 COMMIT;

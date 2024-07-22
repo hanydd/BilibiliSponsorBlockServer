@@ -55,6 +55,9 @@ import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
+import { getPortVideo } from "./routes/getPortVideo";
+import { postPortVideo } from "./routes/postPortVideo";
+import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 
 export function createServer(callback: () => void): Server {
     // Create a service (the app object is just a callback).
@@ -223,6 +226,11 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/branding", getBranding);
     router.get("/api/branding/:prefix", getBrandingByHashEndpoint);
     router.post("/api/branding", postBranding);
+
+    // port videos
+    router.get("/api/portVideo", getPortVideo);
+    router.post("/api/portVideo", postPortVideo);
+    router.post("/api/votePort", voteOnPortVideo);
 
     /* istanbul ignore next */
     if (config.postgres?.enabled) {

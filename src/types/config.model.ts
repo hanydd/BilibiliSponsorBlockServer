@@ -49,6 +49,7 @@ export interface SBSConfig {
     globalSalt: string;
     adminUserID: string;
     newLeafURLs?: string[];
+    youtubeDataApiKey?: string;
     discordReportChannelWebhookURL?: string;
     discordFailedReportChannelWebhookURL?: string;
     discordFirstTimeSubmissionsWebhookURL?: string;
