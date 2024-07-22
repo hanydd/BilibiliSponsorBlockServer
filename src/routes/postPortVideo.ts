@@ -34,6 +34,8 @@ const CHECK_PASS: CheckResult = {
     errorCode: 0,
 };
 
+export const PORT_SEGMENT_USER_ID = "PORT";
+
 export async function postPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.bvID || req.body.bvID;
     const ytbID = req.query.ytbID || req.body.ytbID;
@@ -235,7 +237,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             startingVotes,
             startingLocked,
             newUUID,
-            userID,
+            PORT_SEGMENT_USER_ID,
             timeSubmitted,
             0,
             s.category,
