@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { HiddenType, SegmentUUID, Service, VideoDuration, VoteType } from "../types/segments.model";
+import { HiddenType, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
@@ -184,7 +184,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         await db.prepare(
             "run",
             `INSERT INTO "portVideo" ("bvID", "ytbID", "UUID", "votes", "locked", "userID", "timeSubmitted",
-             "biliDuration", "ytbDuration", "userAgent", "hidden") VALUES(?,?,?,?,?,?,?,?,?,?,?)`,
+             "biliDuration", "ytbDuration", "userAgent", "hidden", "hashedBvID") VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 bvID,
                 ytbID,
@@ -197,6 +197,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
                 ytbDuration,
                 userAgent,
                 0,
+                hashedBvID,
             ]
         );
         await privateDB.prepare(
