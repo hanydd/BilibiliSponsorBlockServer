@@ -44,20 +44,6 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
     } as PortVideoInterface);
 }
 
-export async function tempAddBvIDHash(req: Request, res: Response) {
-    const portVideoRecords: PortVideo[] = await db.prepare("all", `SELECT "bvID" FROM "portVideo"`);
-    portVideoRecords.forEach((p) => {
-        p.hashedBvID = getHash(p.bvID, 1);
-    });
-    for (const portVideo of portVideoRecords) {
-        await db.prepare("run", `UPDATE "portVideo" SET "hashedBvID" = ? WHERE "bvID" = ?`, [
-            portVideo.hashedBvID,
-            portVideo.bvID,
-        ]);
-    }
-    return res.sendStatus(200);
-}
-
 export async function getPortVideoByHash(req: Request, res: Response): Promise<Response> {
     const hashPrefix = req.query.prefix as HashedValue;
 
