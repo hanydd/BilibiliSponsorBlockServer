@@ -55,7 +55,7 @@ import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
-import { getPortVideo } from "./routes/getPortVideo";
+import { getPortVideo, getPortVideoByHash } from "./routes/getPortVideo";
 import { postPortVideo } from "./routes/postPortVideo";
 import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 
@@ -229,6 +229,7 @@ function setupRoutes(router: Router, server: Server) {
 
     // port videos
     router.get("/api/portVideo", getPortVideo);
+    router.get("/api/portVideoByHash", getPortVideoByHash);
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
 

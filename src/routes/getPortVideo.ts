@@ -7,7 +7,6 @@ import { VideoID } from "../types/segments.model";
 import { validate } from "../utils/bilibiliID";
 import { Logger } from "../utils/logger";
 import { HashedValue } from "../types/hash.model";
-import { getHash } from "../utils/getHash";
 
 export async function getPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.videoID as VideoID;
@@ -53,28 +52,21 @@ export async function getPortVideoByHash(req: Request, res: Response): Promise<R
     }
 
     // get data and cache in redis
-    function getPortVideoDB(): Promise<PortVideo[]> {
+    function getPortVideoDB(): Promise<PortVideoInterface[]> {
         return db.prepare(
             "all",
-            `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration" FROM "portVideo"
-            WHERE "bvID" LIKE ? AND "hidden" = 0 AND "votes" > -2`,
+            `SELECT "bvID", "ytbID", "UUID", "votes", "locked" FROM "portVideo"
+            WHERE "hashedBvID" LIKE ? AND "hidden" = 0 AND "votes" > -2`,
             [`${hashPrefix}%`]
         );
     }
-    const portVideoInfo: PortVideo[] = await QueryCacher.get(getPortVideoDB, portVideoByHashCacheKey(hashPrefix));
+    const portVideoInfo: PortVideoInterface[] = await QueryCacher.get(
+        getPortVideoDB,
+        portVideoByHashCacheKey(hashPrefix)
+    );
 
     if (!portVideoInfo || portVideoInfo.length == 0) {
         return res.sendStatus(404);
-    } else if (portVideoInfo.length >= 2) {
-        // multiple found
-        // TODO: mark the highes vote or latest as the only valid record
-        Logger.error(`Multiple port video matches found for ${hashPrefix}`);
     }
-    return res.json({
-        bvID: portVideoInfo[0].bvID,
-        ytbID: portVideoInfo[0].ytbID,
-        UUID: portVideoInfo[0].UUID,
-        votes: portVideoInfo[0].votes,
-        locked: portVideoInfo[0].locked,
-    } as PortVideoInterface);
+    return res.json(portVideoInfo);
 }
