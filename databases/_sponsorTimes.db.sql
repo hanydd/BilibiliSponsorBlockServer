@@ -98,6 +98,7 @@ CREATE TABLE IF NOT EXISTS "portVideo" (
 	"locked" INTEGER NOT NULL default 0,
 	"userID" TEXT NOT NULL,
 	"timeSubmitted" INTEGER NOT NULL,
+	"hashedBvID" TEXT NOT NULL,
 	"userAgent" TEXT
 );
 

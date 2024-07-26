@@ -1,3 +1,4 @@
+import { HashedValue } from "./hash.model";
 import { HashedIP, HiddenType, VideoID, VoteType } from "./segments.model";
 import { HashedUserID } from "./user.model";
 
@@ -24,6 +25,7 @@ export interface PortVideo {
     biliDuration: number;
     ytbDuration: number;
     timeSubmitted: number;
+    hashedBvID: HashedValue;
 }
 
 export interface PortVideoDB extends PortVideo {

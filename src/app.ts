@@ -55,7 +55,7 @@ import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getReady } from "./routes/getReady";
-import { getPortVideo } from "./routes/getPortVideo";
+import { getPortVideo, tempAddBvIDHash } from "./routes/getPortVideo";
 import { postPortVideo } from "./routes/postPortVideo";
 import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 
@@ -99,6 +99,8 @@ function setupRoutes(router: Router, server: Server) {
         if (config.rateLimit.vote) voteEndpoints.unshift(rateLimitMiddleware(config.rateLimit.vote, voteGetUserID));
         if (config.rateLimit.view) viewEndpoints.unshift(rateLimitMiddleware(config.rateLimit.view));
     }
+
+    router.get("/api/tempAddBvIDHash", tempAddBvIDHash);
 
     //add the get function
     router.get("/api/getVideoSponsorTimes", oldGetVideoSponsorTimes);

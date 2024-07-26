@@ -81,5 +81,9 @@ export function getTopCategoryUserKey(sortBy: string, category: string): string 
 }
 
 export function portVideoCacheKey(videoID: VideoID) {
-    return `port.video.${videoID}`;
+    return `port.video.v1.videoID.${videoID}`;
+}
+
+export function portVideoByHashCacheKey(hashPrefix: HashedValue) {
+    return `port.video.v1.${hashPrefix}`;
 }
