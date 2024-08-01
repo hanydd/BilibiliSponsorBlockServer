@@ -229,7 +229,7 @@ function setupRoutes(router: Router, server: Server) {
 
     // port videos
     router.get("/api/portVideo", getPortVideo);
-    router.get("/api/portVideoByHash", getPortVideoByHash);
+    router.get("/api/portVideo/:prefix", getPortVideoByHash);
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
 

@@ -44,7 +44,7 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
 }
 
 export async function getPortVideoByHash(req: Request, res: Response): Promise<Response> {
-    const hashPrefix = req.query.prefix as HashedValue;
+    const hashPrefix = req.params.prefix as HashedValue;
 
     // validate parameters
     if (!hashPrefix) {
