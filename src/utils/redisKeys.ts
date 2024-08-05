@@ -84,6 +84,6 @@ export function portVideoCacheKey(videoID: VideoID) {
     return `port.video.v1.videoID.${videoID}`;
 }
 
-export function portVideoByHashCacheKey(hashPrefix: HashedValue) {
+export function portVideoByHashCacheKey(hashPrefix: string) {
     return `port.video.v1.${hashPrefix}`;
 }
