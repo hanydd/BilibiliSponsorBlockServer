@@ -6,6 +6,12 @@ import { QueryCacher } from "../utils/queryCacher";
 import { getTopUserKey } from "../utils/redisKeys";
 
 const maxRewardTimePerSegmentInSeconds = config.maxRewardTimePerSegmentInSeconds ?? 86400;
+const SORT_TYPE_MAP: { [key: number]: string } = {
+    0: "minutesSaved",
+    1: "viewCount",
+    2: "totalSubmissions",
+    3: "userVotes",
+};
 
 async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = false) {
     const userNames = [];
@@ -81,14 +87,8 @@ export async function getTopUsers(req: Request, res: Response): Promise<Response
     const categoryStatsEnabled = req.query.categoryStats === "true";
 
     //setup which sort type to use
-    let sortBy = "";
-    if (sortType == 0) {
-        sortBy = "minutesSaved";
-    } else if (sortType == 1) {
-        sortBy = "viewCount";
-    } else if (sortType == 2) {
-        sortBy = "totalSubmissions";
-    } else {
+    const sortBy = SORT_TYPE_MAP[sortType];
+    if (!sortBy) {
         //invalid request
         return res.sendStatus(400);
     }
