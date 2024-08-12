@@ -27,7 +27,6 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
             SUM(CASE WHEN category = 'poi_highlight' THEN 1 ELSE 0 END) as "categorySumHighlight",
             SUM(CASE WHEN category = 'filler' THEN 1 ELSE 0 END) as "categorySumFiller",
             SUM(CASE WHEN category = 'exclusive_access' THEN 1 ELSE 0 END) as "categorySumExclusiveAccess",
-            SUM(CASE WHEN category = 'chapter' THEN 1 ELSE 0 END) as "categorySumChapter",
         `;
     }
 
@@ -64,7 +63,6 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
                 row.categorySumHighlight,
                 row.categorySumFiller,
                 row.categorySumExclusiveAccess,
-                row.categorySumChapter,
             ]);
         }
     }
