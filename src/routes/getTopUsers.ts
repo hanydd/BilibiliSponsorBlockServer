@@ -10,7 +10,7 @@ const SORT_TYPE_MAP: { [key: number]: string } = {
     0: "minutesSaved",
     1: "viewCount",
     2: "totalSubmissions",
-    3: "userVotes",
+    3: "votes",
 };
 
 async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = false) {
@@ -18,6 +18,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
     const viewCounts = [];
     const totalSubmissions = [];
     const minutesSaved = [];
+    const votes = [];
     const categoryStats: any[] = categoryStatsEnabled ? [] : undefined;
 
     let additionalFields = "";
@@ -38,7 +39,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
 
     const rows = await db.prepare(
         "all",
-        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount",
+        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount", SUM(votes) as "votes",
         SUM((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
             ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60 * "sponsorTimes"."views") as "minutesSaved",
         SUM("votes") as "userVotes", ${additionalFields}
@@ -57,6 +58,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
         viewCounts.push(row.viewCount);
         totalSubmissions.push(row.totalSubmissions);
         minutesSaved.push(row.minutesSaved);
+        votes.push(row.votes);
         if (categoryStatsEnabled) {
             categoryStats.push([
                 row.categorySumSponsor,
@@ -78,6 +80,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
         viewCounts,
         totalSubmissions,
         minutesSaved,
+        votes,
         categoryStats,
     };
 }
