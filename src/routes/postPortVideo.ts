@@ -210,7 +210,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         Logger.error(err as string);
         return res.sendStatus(500);
     } finally {
-        QueryCacher.clearPortVideoCache(bvID);
+        QueryCacher.clearPortVideoCache(bvID, hashedBvID);
     }
 
     // save all segments
