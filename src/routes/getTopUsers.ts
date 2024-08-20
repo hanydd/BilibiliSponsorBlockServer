@@ -6,7 +6,7 @@ import { QueryCacher } from "../utils/queryCacher";
 import { getTopUserKey } from "../utils/redisKeys";
 
 const maxRewardTimePerSegmentInSeconds = config.maxRewardTimePerSegmentInSeconds ?? 86400;
-const SORT_TYPE_MAP: { [key: number]: string } = {
+export const SORT_TYPE_MAP: { [key: number]: string } = {
     0: "minutesSaved",
     1: "viewCount",
     2: "totalSubmissions",

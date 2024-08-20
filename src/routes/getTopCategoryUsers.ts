@@ -5,6 +5,7 @@ import { validateCategories } from "../utils/parseParams";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
 import { getTopCategoryUserKey } from "../utils/redisKeys";
+import { SORT_TYPE_MAP } from "./getTopUsers";
 
 /* istanbul ignore next */
 const maxRewardTimePerSegmentInSeconds = config.maxRewardTimePerSegmentInSeconds ?? 86400;
@@ -13,6 +14,7 @@ interface DBSegment {
     userName: string;
     viewCount: number;
     totalSubmissions: number;
+    votes: number;
     minutesSaved: number;
 }
 
@@ -20,11 +22,12 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
     const userNames = [];
     const viewCounts = [];
     const totalSubmissions = [];
+    const votes = [];
     const minutesSaved = [];
 
     const rows: DBSegment[] = await db.prepare(
         "all",
-        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount",
+        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount", SUM(votes) as "votes",
         SUM(((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
             ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60) * "sponsorTimes"."views") as "minutesSaved",
         SUM("votes") as "userVotes",
@@ -44,6 +47,7 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
             userNames.push(row.userName);
             viewCounts.push(row.viewCount);
             totalSubmissions.push(row.totalSubmissions);
+            votes.push(row.votes);
             minutesSaved.push(category === "chapter" ? 0 : row.minutesSaved);
         }
     }
@@ -52,6 +56,7 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
         userNames,
         viewCounts,
         totalSubmissions,
+        votes,
         minutesSaved,
     };
 }
@@ -70,14 +75,8 @@ export async function getTopCategoryUsers(req: Request, res: Response): Promise<
     }
 
     //setup which sort type to use
-    let sortBy = "";
-    if (sortType == 0) {
-        sortBy = "minutesSaved";
-    } else if (sortType == 1) {
-        sortBy = "viewCount";
-    } else if (sortType == 2) {
-        sortBy = "totalSubmissions";
-    } else {
+    const sortBy = SORT_TYPE_MAP[sortType];
+    if (!sortBy) {
         //invalid request
         return res.sendStatus(400);
     }
