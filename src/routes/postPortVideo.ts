@@ -77,13 +77,13 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     if (!ytbDuration) {
         lock.unlock();
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
-如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
+如果始终无法提交，您可以前往项目地址反馈：https://github.com/hanydd/BilibiliSponsorBlock/issues/new`);
     }
     const apiBiliDuration = biliVideoDetail?.duration as VideoDuration;
     if (!paramBiliDuration || !apiBiliDuration) {
         lock.unlock();
         return res.status(400).send(`无法获取B站视频信息，请重试。
-如果始终无法提交，您可以前往项目地址反馈：https://github.com/HanYaodong/BilibiliSponsorBlock/issues/new`);
+如果始终无法提交，您可以前往项目地址反馈：https://github.com/hanydd/BilibiliSponsorBlock/issues/new`);
     }
     if (!durationEquals(paramBiliDuration, apiBiliDuration)) {
         lock.unlock();

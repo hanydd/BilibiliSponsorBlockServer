@@ -1,6 +1,6 @@
 # B站空降助手服务端
 
-B站空降助手是一个帮你跳过视频中恰饭部分的浏览器插件。本项目是插件的服务端代码，移植自YouTube的[Sponsor Block](https://github.com/ajayyy/SponsorBlockServer)。更详细的展示和安装请参考 https://github.com/HanYaodong/BilibiliSponsorBlock。
+B站空降助手是一个帮你跳过视频中恰饭部分的浏览器插件。本项目是插件的服务端代码，移植自YouTube的[Sponsor Block](https://github.com/ajayyy/SponsorBlockServer)。更详细的展示和安装请参考 https://github.com/hanydd/BilibiliSponsorBlock。
 
 本项目并没有对docker部署进行测试。
 
@@ -8,7 +8,7 @@ B站空降助手是一个帮你跳过视频中恰饭部分的浏览器插件。�
 
 # 客户端
 
-浏览器插件客户端的项目地址: https://github.com/HanYaodong/BilibiliSponsorBlock
+浏览器插件客户端的项目地址: https://github.com/hanydd/BilibiliSponsorBlock
 
 # 构建项目
 
