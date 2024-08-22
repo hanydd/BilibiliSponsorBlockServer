@@ -11,7 +11,7 @@ export const SORT_TYPE_MAP: { [key: number]: string } = {
     0: "minutesSaved",
     1: "viewCount",
     2: "totalSubmissions",
-    3: "votes",
+    3: "userVotes",
 };
 
 async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = false) {
