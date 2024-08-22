@@ -44,3 +44,8 @@ export interface PortVideoVotesDB {
     hashedIP: HashedIP;
     timeSubmitted: number;
 }
+
+export interface PortVideoCount {
+    userName: string;
+    portVideoSubmissions: number;
+}

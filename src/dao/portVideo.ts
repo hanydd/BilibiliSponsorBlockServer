@@ -1,8 +1,8 @@
 import { db } from "../databases/databases";
-import { PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
+import { PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { VideoID } from "../types/segments.model";
 import { QueryCacher } from "../utils/queryCacher";
-import { portVideoByHashCacheKey, portVideoCacheKey } from "../utils/redisKeys";
+import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../utils/redisKeys";
 
 function getPortVideoDBByBvID(bvID: VideoID, downvoteThreshold = -2): Promise<PortVideoDB[]> {
     return db.prepare(
@@ -28,4 +28,33 @@ function getPortVideoDBByHashPrefix(hashPrefix: string): Promise<PortVideoInterf
 
 export function getPortVideoByHashPrefixCached(hashPrefix: string): Promise<PortVideoInterface[]> {
     return QueryCacher.get(() => getPortVideoDBByHashPrefix(hashPrefix), portVideoByHashCacheKey(hashPrefix));
+}
+
+async function getPortVideoUserCountFromDB(): Promise<Record<string, number>> {
+    const portVideoRows: PortVideoCount[] = await db.prepare(
+        "all",
+        `SELECT
+            COUNT ( * ) AS "portVideoSubmissions",
+            COALESCE ( "userNames"."userName", "portVideo"."userID" ) AS "userName"
+        FROM
+            "portVideo"
+            LEFT JOIN "userNames" ON "portVideo"."userID" = "userNames"."userID"
+            LEFT JOIN "shadowBannedUsers" ON "portVideo"."userID" = "shadowBannedUsers"."userID"
+        WHERE
+            "portVideo"."votes" > - 1
+            AND "portVideo"."hidden" = 0
+            AND "shadowBannedUsers"."userID" IS NULL
+        GROUP BY
+            COALESCE ( "userNames"."userName", "portVideo"."userID" )`
+    );
+
+    const portVideoCounts: Record<string, number> = {};
+    portVideoRows.forEach((element) => {
+        portVideoCounts[element.userName] = element.portVideoSubmissions;
+    });
+    return portVideoCounts;
+}
+
+export function getPortVideoUserCount(): Promise<Record<string, number>> {
+    return QueryCacher.get(() => getPortVideoUserCountFromDB(), portVideoUserCountKey(), 600);
 }

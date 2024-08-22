@@ -87,3 +87,7 @@ export function portVideoCacheKey(videoID: VideoID) {
 export function portVideoByHashCacheKey(hashPrefix: string) {
     return `port.video.v1.${hashPrefix.substring(0, 3)}`;
 }
+
+export function portVideoUserCountKey() {
+    return `port.video.count`;
+}

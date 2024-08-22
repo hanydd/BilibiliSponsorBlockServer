@@ -1,8 +1,9 @@
-import { db } from "../databases/databases";
-import { config } from "../config";
 import { Request, Response } from "express";
-import { validateCategories } from "../utils/parseParams";
+import { config } from "../config";
+import { getPortVideoUserCount } from "../dao/portVideo";
+import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
+import { validateCategories } from "../utils/parseParams";
 import { QueryCacher } from "../utils/queryCacher";
 import { getTopCategoryUserKey } from "../utils/redisKeys";
 import { SORT_TYPE_MAP } from "./getTopUsers";
@@ -14,7 +15,7 @@ interface DBSegment {
     userName: string;
     viewCount: number;
     totalSubmissions: number;
-    votes: number;
+    userVotes: number;
     minutesSaved: number;
 }
 
@@ -23,11 +24,12 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
     const viewCounts = [];
     const totalSubmissions = [];
     const votes = [];
+    const portVideo = [];
     const minutesSaved = [];
 
     const rows: DBSegment[] = await db.prepare(
         "all",
-        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount", SUM(votes) as "votes",
+        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount",
         SUM(((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
             ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60) * "sponsorTimes"."views") as "minutesSaved",
         SUM("votes") as "userVotes",
@@ -42,12 +44,15 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
         [maxRewardTimePerSegmentInSeconds, maxRewardTimePerSegmentInSeconds, category]
     );
 
+    const portVideoCounts = await getPortVideoUserCount();
+
     if (rows) {
         for (const row of rows) {
             userNames.push(row.userName);
             viewCounts.push(row.viewCount);
             totalSubmissions.push(row.totalSubmissions);
-            votes.push(row.votes);
+            votes.push(row.userVotes);
+            portVideo.push(portVideoCounts[row.userName] ?? 0);
             minutesSaved.push(category === "chapter" ? 0 : row.minutesSaved);
         }
     }
@@ -57,6 +62,7 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
         viewCounts,
         totalSubmissions,
         votes,
+        portVideo,
         minutesSaved,
     };
 }

@@ -1,6 +1,7 @@
-import { db } from "../databases/databases";
-import { config } from "../config";
 import { Request, Response } from "express";
+import { config } from "../config";
+import { getPortVideoUserCount } from "../dao/portVideo";
+import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
 import { getTopUserKey } from "../utils/redisKeys";
@@ -19,6 +20,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
     const totalSubmissions = [];
     const minutesSaved = [];
     const votes = [];
+    const portVideo = [];
     const categoryStats: any[] = categoryStatsEnabled ? [] : undefined;
 
     let additionalFields = "";
@@ -39,7 +41,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
 
     const rows = await db.prepare(
         "all",
-        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount", SUM(votes) as "votes",
+        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount",
         SUM((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
             ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60 * "sponsorTimes"."views") as "minutesSaved",
         SUM("votes") as "userVotes", ${additionalFields}
@@ -53,12 +55,15 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
         [maxRewardTimePerSegmentInSeconds, maxRewardTimePerSegmentInSeconds]
     );
 
+    const portVideoCounts = await getPortVideoUserCount();
+
     for (const row of rows) {
         userNames.push(row.userName);
         viewCounts.push(row.viewCount);
         totalSubmissions.push(row.totalSubmissions);
         minutesSaved.push(row.minutesSaved);
-        votes.push(row.votes);
+        votes.push(row.userVotes);
+        portVideo.push(portVideoCounts[row.userName] ?? 0);
         if (categoryStatsEnabled) {
             categoryStats.push([
                 row.categorySumSponsor,
@@ -81,6 +86,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
         totalSubmissions,
         minutesSaved,
         votes,
+        portVideo,
         categoryStats,
     };
 }
