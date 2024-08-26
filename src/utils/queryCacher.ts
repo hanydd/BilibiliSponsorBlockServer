@@ -199,6 +199,20 @@ function clearPortVideoCache(videoID: VideoID, prefix: string): void {
     redis.del(portVideoByHashCacheKey(prefix)).catch((err) => Logger.error(err));
 }
 
+function clearTopUserCache(): void {
+    redis.del("topUsers.minutesSaved.true").catch((err) => Logger.error(err));
+    redis.del("topUsers.viewCount.true").catch((err) => Logger.error(err));
+    redis.del("topUsers.totalSubmissions.true").catch((err) => Logger.error(err));
+    redis.del("topUsers.userVotes.true").catch((err) => Logger.error(err));
+    redis.del("topUsers.portVideoSubmissions.true").catch((err) => Logger.error(err));
+
+    redis.del("topUsers.minutesSaved.false").catch((err) => Logger.error(err));
+    redis.del("topUsers.viewCount.false").catch((err) => Logger.error(err));
+    redis.del("topUsers.totalSubmissions.false").catch((err) => Logger.error(err));
+    redis.del("topUsers.userVotes.false").catch((err) => Logger.error(err));
+    redis.del("topUsers.portVideoSubmissions.false").catch((err) => Logger.error(err));
+}
+
 export const QueryCacher = {
     get,
     getTraced,
@@ -209,4 +223,5 @@ export const QueryCacher = {
     clearRatingCache,
     clearFeatureCache,
     clearPortVideoCache,
+    clearTopUserCache,
 };
