@@ -1,17 +1,16 @@
 import { Request, Response } from "express";
 import { config } from "../config";
-import { getPortVideoUserCount } from "../dao/portVideo";
 import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
 import { getTopUserKey } from "../utils/redisKeys";
 
-const maxRewardTimePerSegmentInSeconds = config.maxRewardTimePerSegmentInSeconds ?? 86400;
 export const SORT_TYPE_MAP: { [key: number]: string } = {
     0: "minutesSaved",
     1: "viewCount",
     2: "totalSubmissions",
     3: "userVotes",
+    4: "portVideoSubmissions",
 };
 
 async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = false) {
@@ -25,37 +24,17 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
 
     let additionalFields = "";
     if (categoryStatsEnabled) {
-        additionalFields += `
-            SUM(CASE WHEN category = 'sponsor' THEN 1 ELSE 0 END) as "categorySumSponsor",
-            SUM(CASE WHEN category = 'intro' THEN 1 ELSE 0 END) as "categorySumIntro",
-            SUM(CASE WHEN category = 'outro' THEN 1 ELSE 0 END) as "categorySumOutro",
-            SUM(CASE WHEN category = 'interaction' THEN 1 ELSE 0 END) as "categorySumInteraction",
-            SUM(CASE WHEN category = 'selfpromo' THEN 1 ELSE 0 END) as "categorySumSelfpromo",
-            SUM(CASE WHEN category = 'music_offtopic' THEN 1 ELSE 0 END) as "categorySumMusicOfftopic",
-            SUM(CASE WHEN category = 'preview' THEN 1 ELSE 0 END) as "categorySumPreview",
-            SUM(CASE WHEN category = 'poi_highlight' THEN 1 ELSE 0 END) as "categorySumHighlight",
-            SUM(CASE WHEN category = 'filler' THEN 1 ELSE 0 END) as "categorySumFiller",
-            SUM(CASE WHEN category = 'exclusive_access' THEN 1 ELSE 0 END) as "categorySumExclusiveAccess",
-        `;
+        additionalFields += `", categorySumSponsor", "categorySumIntro", "categorySumOutro", "categorySumInteraction",
+            "categorySumSelfpromo", "categorySumMusicOfftopic", "categorySumPreview", "categorySumHighlight",
+            "categorySumFiller", "categorySumExclusiveAccess"`;
     }
 
     const rows = await db.prepare(
         "all",
-        `SELECT COUNT(*) as "totalSubmissions", SUM(views) as "viewCount",
-        SUM((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
-            ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60 * "sponsorTimes"."views") as "minutesSaved",
-        SUM("votes") as "userVotes", ${additionalFields}
-        COALESCE("userNames"."userName", "sponsorTimes"."userID") as "userName"
-        FROM "sponsorTimes"
-            LEFT JOIN "userNames" on "sponsorTimes"."userID" = "userNames"."userID"
-            LEFT JOIN "shadowBannedUsers" ON "sponsorTimes"."userID"="shadowBannedUsers"."userID"
-        WHERE "sponsorTimes"."votes" > -1 AND "sponsorTimes"."shadowHidden" != 1 AND "shadowBannedUsers"."userID" IS NULL
-        GROUP BY COALESCE("userNames"."userName", "sponsorTimes"."userID")
-        ORDER BY "${sortBy}" DESC LIMIT 100`,
-        [maxRewardTimePerSegmentInSeconds, maxRewardTimePerSegmentInSeconds]
+        `SELECT "userName", "viewCount", "totalSubmissions", "minutesSaved", "userVotes", "portVideoSubmissions"
+        ${additionalFields} FROM "topUser" ORDER BY "${sortBy}" DESC LIMIT 100`,
+        []
     );
-
-    const portVideoCounts = await getPortVideoUserCount();
 
     for (const row of rows) {
         userNames.push(row.userName);
@@ -63,7 +42,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
         totalSubmissions.push(row.totalSubmissions);
         minutesSaved.push(row.minutesSaved);
         votes.push(row.userVotes);
-        portVideo.push(portVideoCounts[row.userName] ?? 0);
+        portVideo.push(row.portVideoSubmissions);
         if (categoryStatsEnabled) {
             categoryStats.push([
                 row.categorySumSponsor,
