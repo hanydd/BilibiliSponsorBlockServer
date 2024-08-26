@@ -24,7 +24,7 @@ async function generateTopUsersStats(sortBy: string, categoryStatsEnabled = fals
 
     let additionalFields = "";
     if (categoryStatsEnabled) {
-        additionalFields += `", categorySumSponsor", "categorySumIntro", "categorySumOutro", "categorySumInteraction",
+        additionalFields += `, "categorySumSponsor", "categorySumIntro", "categorySumOutro", "categorySumInteraction",
             "categorySumSelfpromo", "categorySumMusicOfftopic", "categorySumPreview", "categorySumHighlight",
             "categorySumFiller", "categorySumExclusiveAccess"`;
     }
