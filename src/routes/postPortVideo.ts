@@ -65,11 +65,14 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // get ytb video duration
     let ytbDuration = 0 as VideoDuration;
-    if (!ytbSegments || ytbSegments.length === 0) {
-        ytbDuration = await getYoutubeVideoDuraion(ytbID);
-    } else {
-        ytbDuration = average(ytbSegments.map((s) => s.videoDuration)) as VideoDuration;
+    if (ytbSegments && ytbSegments.length > 0) {
+        ytbDuration = average(
+            ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)
+        ) as VideoDuration;
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
+    }
+    if (!ytbDuration) {
+        ytbDuration = await getYoutubeVideoDuraion(ytbID);
     }
 
     // video duration check
