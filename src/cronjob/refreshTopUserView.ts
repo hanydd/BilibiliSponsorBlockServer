@@ -11,7 +11,7 @@ export async function refreshTopUserView() {
     QueryCacher.clearTopUserCache();
 }
 
-const refreshTopUserViewJob = new CronJob("*/10 * * * *", () => void refreshTopUserView());
+const refreshTopUserViewJob = new CronJob("*/15 * * * *", () => void refreshTopUserView());
 
 async function createTopUserView() {
     // create view
@@ -71,28 +71,6 @@ FROM (
     ) sponsor
     ON ((port."userName" = sponsor."userName"))
 )`
-    );
-
-    // create indexes
-    await db.prepare(
-        "run",
-        `CREATE INDEX IF NOT EXISTS "topUserIndexTotalSubmissions" ON "topUser" USING btree ("totalSubmissions" DESC NULLS LAST)`
-    );
-    await db.prepare(
-        "run",
-        `CREATE INDEX IF NOT EXISTS "topUserIndexViewCount" ON "topUser" USING btree ("viewCount" DESC NULLS LAST)`
-    );
-    await db.prepare(
-        "run",
-        `CREATE INDEX IF NOT EXISTS "topUserIndexMinutesSaved" ON "topUser" USING btree ("minutesSaved" DESC NULLS LAST)`
-    );
-    await db.prepare(
-        "run",
-        `CREATE INDEX IF NOT EXISTS "topUserIndexUserVotes" ON "topUser" USING btree ("userVotes" DESC NULLS LAST)`
-    );
-    await db.prepare(
-        "run",
-        `CREATE INDEX IF NOT EXISTS "topUserIndexPortVideoSubmissions" ON "topUser" USING btree ("portVideoSubmissions" DESC NULLS LAST)`
     );
 }
 
