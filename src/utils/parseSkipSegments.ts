@@ -1,8 +1,9 @@
 import { Request } from "express";
-import { ActionType, SegmentUUID, Category, Service } from "../types/segments.model";
+import { ActionType, Category, SegmentUUID, Service } from "../types/segments.model";
 import { getService } from "./getService";
 
-import { parseCategories, parseActionTypes, parseRequiredSegments } from "./parseParams";
+import { ALL_ACTION_TYPES, ALL_CATEGORIES } from "./contant";
+import { parseActionTypes, parseCategories, parseRequiredSegments } from "./parseParams";
 
 const errorMessage = (parameter: string) => `${parameter} parameter does not match format requirements.`;
 
@@ -13,8 +14,8 @@ export function parseSkipSegments(req: Request): {
     service: Service;
     errors: string[];
 } {
-    const categories: Category[] = parseCategories(req, [ "sponsor" as Category ]);
-    const actionTypes: ActionType[] = parseActionTypes(req, [ActionType.Skip]);
+    const categories: Category[] = parseCategories(req, ALL_CATEGORIES);
+    const actionTypes: ActionType[] = parseActionTypes(req, ALL_ACTION_TYPES);
     const requiredSegments: SegmentUUID[] = parseRequiredSegments(req);
     const service: Service = getService(req.query.service, req.body.services);
     const errors: string[] = [];
@@ -29,6 +30,6 @@ export function parseSkipSegments(req: Request): {
         actionTypes,
         requiredSegments,
         service,
-        errors
+        errors,
     };
 }
