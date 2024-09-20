@@ -146,6 +146,10 @@ async function getAndSplit<T, U extends string>(
     );
 }
 
+function clearKey(key: string): void {
+    redis.del(key).catch((err) => Logger.error(err));
+}
+
 function clearSegmentCache(videoInfo: {
     videoID: VideoID;
     hashedVideoID: VideoIDHash;
@@ -217,6 +221,7 @@ export const QueryCacher = {
     get,
     getTraced,
     getAndSplit,
+    clearKey,
     clearSegmentCache,
     clearBrandingCache,
     getKeyLastModified,

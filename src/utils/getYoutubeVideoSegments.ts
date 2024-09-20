@@ -30,7 +30,7 @@ export function getYoutubeSegments(ytbID: string, timeout = 10000): Promise<Segm
 /**
  * use YouTube Data API to get video information via shield.io
  */
-export function getYoutubeVideoDetail(ytbID: string): Promise<VideoDuration | null> {
+export function getYoutubeVideoDuraion(ytbID: string): Promise<VideoDuration | null> {
     // the video ID is assused to be checked and clean
     Logger.info(`Retrieving YTB video duration ${ytbID} using Data API`);
     return axios

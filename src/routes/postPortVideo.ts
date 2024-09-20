@@ -13,7 +13,7 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { average } from "../utils/array";
-import { getYoutubeSegments, getYoutubeVideoDetail as getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
+import { getYoutubeSegments, getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getHash } from "../utils/getHash";
 import { getReputation } from "../utils/reputation";

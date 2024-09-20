@@ -1,6 +1,8 @@
 import { BilibiliVideoDetailView } from "../types/bilibiliViewApi.model";
 import { BilibiliAPI } from "./bilibiliApi";
 import { Logger } from "./logger";
+import { QueryCacher } from "./queryCacher";
+import { videoDetailCacheKey } from "./redisKeys";
 
 export interface videoDetails {
     videoId: string;
@@ -21,10 +23,16 @@ const convertFromVideoViewAPI = (videoId: string, input: BilibiliVideoDetailView
 });
 
 export function getVideoDetails(videoId: string, ignoreCache = false): Promise<videoDetails | null> {
-    return BilibiliAPI.getVideoDetailView(videoId)
-        .then((data) => convertFromVideoViewAPI(videoId, data))
-        .catch((e) => {
-            Logger.error(e.message);
-            return null;
-        });
+    if (ignoreCache) {
+        QueryCacher.clearKey(videoDetailCacheKey(videoId));
+    }
+    return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId));
+    function getVideoDetailsFromAPI(videoId: string): Promise<videoDetails> {
+        return BilibiliAPI.getVideoDetailView(videoId)
+            .then((data) => convertFromVideoViewAPI(videoId, data))
+            .catch((e) => {
+                Logger.error(e.message);
+                return null;
+            });
+    }
 }
