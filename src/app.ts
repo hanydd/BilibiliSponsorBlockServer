@@ -1,6 +1,5 @@
 import express, { Request, RequestHandler, Response, Router } from "express";
 import { config } from "./config";
-import { oldSubmitSponsorTimes } from "./routes/oldSubmitSponsorTimes";
 import { postSegmentShift } from "./routes/postSegmentShift";
 import { postWarning } from "./routes/postWarning";
 import { getIsUserVIP } from "./routes/getIsUserVIP";
@@ -20,7 +19,7 @@ import { viewedVideoSponsorTime } from "./routes/viewedVideoSponsorTime";
 import { voteOnSponsorTime, getUserID as voteGetUserID } from "./routes/voteOnSponsorTime";
 import { getSkipSegmentsByHash } from "./routes/getSkipSegmentsByHash";
 import { postSkipSegments } from "./routes/postSkipSegments";
-import { getSkipSegments, oldGetVideoSponsorTimes } from "./routes/getSkipSegments";
+import { getSkipSegments } from "./routes/getSkipSegments";
 import { userCounter } from "./middleware/userCounter";
 import { loggerMiddleware } from "./middleware/logger";
 import { corsMiddleware } from "./middleware/cors";
@@ -99,13 +98,6 @@ function setupRoutes(router: Router, server: Server) {
         if (config.rateLimit.vote) voteEndpoints.unshift(rateLimitMiddleware(config.rateLimit.vote, voteGetUserID));
         if (config.rateLimit.view) viewEndpoints.unshift(rateLimitMiddleware(config.rateLimit.view));
     }
-
-    //add the get function
-    router.get("/api/getVideoSponsorTimes", oldGetVideoSponsorTimes);
-
-    //add the oldpost function
-    router.get("/api/postVideoSponsorTimes", oldSubmitSponsorTimes);
-    router.post("/api/postVideoSponsorTimes", oldSubmitSponsorTimes);
 
     //add the skip segments functions
     router.get("/api/skipSegments", getSkipSegments);
@@ -237,8 +229,12 @@ function setupRoutes(router: Router, server: Server) {
     if (config.postgres?.enabled) {
         router.get("/database", (req, res) => dumpDatabase(req, res, true));
         router.get("/database.json", (req, res) => dumpDatabase(req, res, false));
-        router.get("/database/*", (req, res) => res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync"));
-        router.use("/download", (req, res) => res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync"));
+        router.get("/database/*", (req, res) =>
+            res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync")
+        );
+        router.use("/download", (req, res) =>
+            res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync")
+        );
     } else {
         router.get("/database.db", function (req: Request, res: Response) {
             res.sendFile("./databases/sponsorTimes.db", { root: "./" });

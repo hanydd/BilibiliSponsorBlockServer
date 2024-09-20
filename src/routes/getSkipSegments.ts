@@ -4,7 +4,23 @@ import { config } from "../config";
 import { db, privateDB } from "../databases/databases";
 import { skipSegmentsHashKey, skipSegmentsKey, skipSegmentGroupsKey, shadowHiddenIPKey } from "../utils/redisKeys";
 import { SBRecord } from "../types/lib.model";
-import { ActionType, Category, DBSegment, HashedIP, IPAddress, OverlappingSegmentGroup, Segment, SegmentCache, SegmentUUID, Service, VideoData, VideoID, VideoIDHash, Visibility, VotableObject } from "../types/segments.model";
+import {
+    ActionType,
+    Category,
+    DBSegment,
+    HashedIP,
+    IPAddress,
+    OverlappingSegmentGroup,
+    Segment,
+    SegmentCache,
+    SegmentUUID,
+    Service,
+    VideoData,
+    VideoID,
+    VideoIDHash,
+    Visibility,
+    VotableObject,
+} from "../types/segments.model";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { Logger } from "../utils/logger";
@@ -17,71 +33,88 @@ import { getEtag } from "../middleware/etag";
 import { shuffleArray } from "../utils/array";
 import { Postgres } from "../databases/Postgres";
 
-async function prepareCategorySegments(req: Request, videoID: VideoID, service: Service, segments: DBSegment[], cache: SegmentCache = { shadowHiddenSegmentIPs: {} }, useCache: boolean): Promise<Segment[]> {
-    const shouldFilter: boolean[] = await Promise.all(segments.map(async (segment) => {
-        if (segment.required) {
-            return true; //required - always send
-        }
-
-        if (segment.hidden || segment.votes < -1) {
-            return false; //too untrustworthy, just ignore it
-        }
-
-        //check if shadowHidden
-        //this means it is hidden to everyone but the original ip that submitted it
-        if (segment.shadowHidden === Visibility.VISIBLE) {
-            return true;
-        }
-
-        if (cache.shadowHiddenSegmentIPs[videoID] === undefined) cache.shadowHiddenSegmentIPs[videoID] = {};
-        if (cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] === undefined) {
-            if (cache.userHashedIP === undefined && cache.userHashedIPPromise === undefined) {
-                cache.userHashedIPPromise = getHashCache((getIP(req) + config.globalSalt) as IPAddress);
+async function prepareCategorySegments(
+    req: Request,
+    videoID: VideoID,
+    service: Service,
+    segments: DBSegment[],
+    cache: SegmentCache = { shadowHiddenSegmentIPs: {} },
+    useCache: boolean
+): Promise<Segment[]> {
+    const shouldFilter: boolean[] = await Promise.all(
+        segments.map(async (segment) => {
+            if (segment.required) {
+                return true; //required - always send
             }
 
-            const service = getService(req?.query?.service as string);
-            const fetchData = () => privateDB.prepare("all", 'SELECT "hashedIP" FROM "sponsorTimes" WHERE "videoID" = ? AND "timeSubmitted" = ? AND "service" = ?',
-                [videoID, segment.timeSubmitted, service], { useReplica: true }) as Promise<{ hashedIP: HashedIP }[]>;
-            try {
-                if (db.highLoad() || privateDB.highLoad()) {
-                    Logger.error("High load, not handling shadowhide");
-                    if (db instanceof Postgres && privateDB instanceof Postgres) {
-                        Logger.error(`Postgres stats: ${JSON.stringify(db.getStats())}`);
-                        Logger.error(`Postgres private stats: ${JSON.stringify(privateDB.getStats())}`);
-                    }
-                    return false;
+            if (segment.hidden || segment.votes < -1) {
+                return false; //too untrustworthy, just ignore it
+            }
+
+            //check if shadowHidden
+            //this means it is hidden to everyone but the original ip that submitted it
+            if (segment.shadowHidden === Visibility.VISIBLE) {
+                return true;
+            }
+
+            if (cache.shadowHiddenSegmentIPs[videoID] === undefined) cache.shadowHiddenSegmentIPs[videoID] = {};
+            if (cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] === undefined) {
+                if (cache.userHashedIP === undefined && cache.userHashedIPPromise === undefined) {
+                    cache.userHashedIPPromise = getHashCache((getIP(req) + config.globalSalt) as IPAddress);
                 }
 
-                cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] = promiseOrTimeout(QueryCacher.get(fetchData, shadowHiddenIPKey(videoID, segment.timeSubmitted, service)), 150);
+                const service = getService(req?.query?.service as string);
+                const fetchData = () =>
+                    privateDB.prepare(
+                        "all",
+                        'SELECT "hashedIP" FROM "sponsorTimes" WHERE "videoID" = ? AND "timeSubmitted" = ? AND "service" = ?',
+                        [videoID, segment.timeSubmitted, service],
+                        { useReplica: true }
+                    ) as Promise<{ hashedIP: HashedIP }[]>;
+                try {
+                    if (db.highLoad() || privateDB.highLoad()) {
+                        Logger.error("High load, not handling shadowhide");
+                        if (db instanceof Postgres && privateDB instanceof Postgres) {
+                            Logger.error(`Postgres stats: ${JSON.stringify(db.getStats())}`);
+                            Logger.error(`Postgres private stats: ${JSON.stringify(privateDB.getStats())}`);
+                        }
+                        return false;
+                    }
+
+                    cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] = promiseOrTimeout(
+                        QueryCacher.get(fetchData, shadowHiddenIPKey(videoID, segment.timeSubmitted, service)),
+                        150
+                    );
+                } catch (e) {
+                    // give up on shadowhide for now
+                    cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] = null;
+                }
+            }
+
+            let ipList = [];
+            try {
+                ipList = await cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted];
             } catch (e) {
-                // give up on shadowhide for now
-                cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted] = null;
-            }
-        }
+                Logger.error(`skipSegments: Error while trying to find IP: ${e}`);
+                if (db instanceof Postgres && privateDB instanceof Postgres) {
+                    Logger.error(`Postgres stats: ${JSON.stringify(db.getStats())}`);
+                    Logger.error(`Postgres private stats: ${JSON.stringify(privateDB.getStats())}`);
+                }
 
-        let ipList = [];
-        try {
-            ipList = await cache.shadowHiddenSegmentIPs[videoID][segment.timeSubmitted];
-        } catch (e) {
-            Logger.error(`skipSegments: Error while trying to find IP: ${e}`);
-            if (db instanceof Postgres && privateDB instanceof Postgres) {
-                Logger.error(`Postgres stats: ${JSON.stringify(db.getStats())}`);
-                Logger.error(`Postgres private stats: ${JSON.stringify(privateDB.getStats())}`);
+                return false;
             }
 
-            return false;
-        }
+            if (ipList?.length > 0 && cache.userHashedIP === undefined) {
+                cache.userHashedIP = await cache.userHashedIPPromise;
+            }
+            //if this isn't their ip, don't send it to them
+            const shouldShadowHide =
+                ipList?.some((shadowHiddenSegment) => shadowHiddenSegment.hashedIP === cache.userHashedIP) ?? false;
 
-        if (ipList?.length > 0 && cache.userHashedIP === undefined) {
-            cache.userHashedIP = await cache.userHashedIPPromise;
-        }
-        //if this isn't their ip, don't send it to them
-        const shouldShadowHide = ipList?.some(
-            (shadowHiddenSegment) => shadowHiddenSegment.hashedIP === cache.userHashedIP) ?? false;
-
-        if (shouldShadowHide) useCache = false;
-        return shouldShadowHide;
-    }));
+            if (shouldShadowHide) useCache = false;
+            return shouldShadowHide;
+        })
+    );
 
     const filteredSegments = segments.filter((_, index) => shouldFilter[index]);
 
@@ -94,12 +127,18 @@ async function prepareCategorySegments(req: Request, videoID: VideoID, service: 
         votes: chosenSegment.votes,
         videoDuration: chosenSegment.videoDuration,
         userID: chosenSegment.userID,
-        description: chosenSegment.description
+        description: chosenSegment.description,
     }));
 }
 
-async function getSegmentsByVideoID(req: Request, videoID: VideoID, categories: Category[],
-    actionTypes: ActionType[], requiredSegments: SegmentUUID[], service: Service): Promise<Segment[]> {
+async function getSegmentsByVideoID(
+    req: Request,
+    videoID: VideoID,
+    categories: Category[],
+    actionTypes: ActionType[],
+    requiredSegments: SegmentUUID[],
+    service: Service
+): Promise<Segment[]> {
     const cache: SegmentCache = { shadowHiddenSegmentIPs: {} };
 
     // For old clients
@@ -109,15 +148,19 @@ async function getSegmentsByVideoID(req: Request, videoID: VideoID, categories: 
     }
 
     try {
-        const segments: DBSegment[] = (await getSegmentsFromDBByVideoID(videoID, service))
-            .map((segment: DBSegment) => {
-                if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
-                return segment;
-            }, {});
+        const segments: DBSegment[] = (await getSegmentsFromDBByVideoID(videoID, service)).map((segment: DBSegment) => {
+            if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
+            return segment;
+        }, {});
 
         const canUseCache = requiredSegments.length === 0;
-        let processedSegments: Segment[] = (await prepareCategorySegments(req, videoID, service, segments, cache, canUseCache))
-            .filter((segment: Segment) => categories.includes(segment?.category) && (actionTypes.includes(segment?.actionType)))
+        let processedSegments: Segment[] = (
+            await prepareCategorySegments(req, videoID, service, segments, cache, canUseCache)
+        )
+            .filter(
+                (segment: Segment) =>
+                    categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
+            )
             .map((segment: Segment) => ({
                 category: segment.category,
                 actionType: segment.actionType,
@@ -126,13 +169,13 @@ async function getSegmentsByVideoID(req: Request, videoID: VideoID, categories: 
                 videoDuration: segment.videoDuration,
                 locked: segment.locked,
                 votes: segment.votes,
-                description: segment.description
+                description: segment.description,
             }));
 
         if (forcePoiAsSkip) {
             processedSegments = processedSegments.map((segment) => ({
                 ...segment,
-                actionType: segment.actionType === ActionType.Poi ? ActionType.Skip : segment.actionType
+                actionType: segment.actionType === ActionType.Poi ? ActionType.Skip : segment.actionType,
             }));
         }
 
@@ -145,8 +188,14 @@ async function getSegmentsByVideoID(req: Request, videoID: VideoID, categories: 
     }
 }
 
-async function getSegmentsByHash(req: Request, hashedVideoIDPrefix: VideoIDHash, categories: Category[],
-    actionTypes: ActionType[], requiredSegments: SegmentUUID[], service: Service): Promise<SBRecord<VideoID, VideoData>> {
+async function getSegmentsByHash(
+    req: Request,
+    hashedVideoIDPrefix: VideoIDHash,
+    categories: Category[],
+    actionTypes: ActionType[],
+    requiredSegments: SegmentUUID[],
+    service: Service
+): Promise<SBRecord<VideoID, VideoData>> {
     const cache: SegmentCache = { shadowHiddenSegmentIPs: {} };
     const segments: SBRecord<VideoID, VideoData> = {};
 
@@ -159,49 +208,64 @@ async function getSegmentsByHash(req: Request, hashedVideoIDPrefix: VideoIDHash,
     try {
         type SegmentPerVideoID = SBRecord<VideoID, { segments: DBSegment[] }>;
 
-        const segmentPerVideoID: SegmentPerVideoID = (await getSegmentsFromDBByHash(hashedVideoIDPrefix, service))
-            .reduce((acc: SegmentPerVideoID, segment: DBSegment) => {
-                acc[segment.videoID] = acc[segment.videoID] || {
-                    segments: []
-                };
-                if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
-
-                acc[segment.videoID].segments ??= [];
-                acc[segment.videoID].segments.push(segment);
-
-                return acc;
-            }, {});
-
-        await Promise.all(Object.entries(segmentPerVideoID).map(async ([videoID, videoData]) => {
-            const data: VideoData = {
+        const segmentPerVideoID: SegmentPerVideoID = (
+            await getSegmentsFromDBByHash(hashedVideoIDPrefix, service)
+        ).reduce((acc: SegmentPerVideoID, segment: DBSegment) => {
+            acc[segment.videoID] = acc[segment.videoID] || {
                 segments: [],
             };
+            if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
 
-            const canUseCache = requiredSegments.length === 0;
-            data.segments = (await prepareCategorySegments(req, videoID as VideoID, service, videoData.segments, cache, canUseCache))
-                .filter((segment: Segment) => categories.includes(segment?.category) && actionTypes.includes(segment?.actionType))
-                .map((segment) => ({
-                    category: segment.category,
-                    actionType: segment.actionType,
-                    segment: segment.segment,
-                    UUID: segment.UUID,
-                    videoDuration: segment.videoDuration,
-                    locked: segment.locked,
-                    votes: segment.votes,
-                    description: segment.description
-                }));
+            acc[segment.videoID].segments ??= [];
+            acc[segment.videoID].segments.push(segment);
 
-            if (forcePoiAsSkip) {
-                data.segments = data.segments.map((segment) => ({
-                    ...segment,
-                    actionType: segment.actionType === ActionType.Poi ? ActionType.Skip : segment.actionType
-                }));
-            }
+            return acc;
+        }, {});
 
-            if (data.segments.length > 0) {
-                segments[videoID] = data;
-            }
-        }));
+        await Promise.all(
+            Object.entries(segmentPerVideoID).map(async ([videoID, videoData]) => {
+                const data: VideoData = {
+                    segments: [],
+                };
+
+                const canUseCache = requiredSegments.length === 0;
+                data.segments = (
+                    await prepareCategorySegments(
+                        req,
+                        videoID as VideoID,
+                        service,
+                        videoData.segments,
+                        cache,
+                        canUseCache
+                    )
+                )
+                    .filter(
+                        (segment: Segment) =>
+                            categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
+                    )
+                    .map((segment) => ({
+                        category: segment.category,
+                        actionType: segment.actionType,
+                        segment: segment.segment,
+                        UUID: segment.UUID,
+                        videoDuration: segment.videoDuration,
+                        locked: segment.locked,
+                        votes: segment.votes,
+                        description: segment.description,
+                    }));
+
+                if (forcePoiAsSkip) {
+                    data.segments = data.segments.map((segment) => ({
+                        ...segment,
+                        actionType: segment.actionType === ActionType.Poi ? ActionType.Skip : segment.actionType,
+                    }));
+                }
+
+                if (data.segments.length > 0) {
+                    segments[videoID] = data;
+                }
+            })
+        );
 
         return segments;
     } catch (err) /* istanbul ignore next */ {
@@ -211,8 +275,8 @@ async function getSegmentsByHash(req: Request, hashedVideoIDPrefix: VideoIDHash,
 }
 
 async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () => db
-        .prepare(
+    const fetchFromDB = () =>
+        db.prepare(
             "all",
             `SELECT "videoID", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description" FROM "sponsorTimes"
             WHERE "hashedVideoID" LIKE ? AND "service" = ? ORDER BY "startTime"`,
@@ -228,10 +292,10 @@ async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service
 }
 
 async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () => db
-        .prepare(
+    const fetchFromDB = () =>
+        db.prepare(
             "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description" FROM "sponsorTimes" 
+            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description" FROM "sponsorTimes"
             WHERE "videoID" = ? AND "service" = ? ORDER BY "startTime"`,
             [videoID, service],
             { useReplica: true }
@@ -244,15 +308,20 @@ async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Service): P
 // amountOfChoices specifies the maximum amount of choices to return, 1 or more.
 // Choices are unique
 // If a predicate is given, it will only filter choices following it, and will leave the rest in the list
-function getBestChoice<T extends VotableObject>(choices: T[], amountOfChoices: number, filterLocked = false, predicate?: (choice: T) => void): T[] {
+function getBestChoice<T extends VotableObject>(
+    choices: T[],
+    amountOfChoices: number,
+    filterLocked = false,
+    predicate?: (choice: T) => void
+): T[] {
     //trivial case: no need to go through the whole process
     if (amountOfChoices >= choices.length) {
         return choices;
     }
 
     type TWithWeight = T & {
-        weight: number
-    }
+        weight: number;
+    };
 
     let forceIncludedChoices: T[] = [];
     let filteredChoices = choices;
@@ -267,12 +336,14 @@ function getBestChoice<T extends VotableObject>(choices: T[], amountOfChoices: n
     }
 
     //assign a weight to each choice
-    const choicesWithWeights: TWithWeight[] = shuffleArray(filteredChoices.map(choice => {
-        const boost = choice.reputation;
+    const choicesWithWeights: TWithWeight[] = shuffleArray(
+        filteredChoices.map((choice) => {
+            const boost = choice.reputation;
 
-        const weight = choice.votes + boost;
-        return { ...choice, weight };
-    })).sort((a, b) => b.weight - a.weight);
+            const weight = choice.votes + boost;
+            return { ...choice, weight };
+        })
+    ).sort((a, b) => b.weight - a.weight);
 
     // Nothing to filter for
     if (amountOfChoices >= choicesWithWeights.length) {
@@ -288,18 +359,25 @@ function getBestChoice<T extends VotableObject>(choices: T[], amountOfChoices: n
     return chosen;
 }
 
-async function chooseSegments(videoID: VideoID, service: Service, segments: DBSegment[], useCache: boolean): Promise<DBSegment[]> {
+async function chooseSegments(
+    videoID: VideoID,
+    service: Service,
+    segments: DBSegment[],
+    useCache: boolean
+): Promise<DBSegment[]> {
     const fetchData = async () => await buildSegmentGroups(segments);
 
-    const groups = useCache && config.useCacheForSegmentGroups
-        ? await QueryCacher.get(fetchData, skipSegmentGroupsKey(videoID, service))
-        : await fetchData();
+    const groups =
+        useCache && config.useCacheForSegmentGroups
+            ? await QueryCacher.get(fetchData, skipSegmentGroupsKey(videoID, service))
+            : await fetchData();
 
     // Filter for only 1 item for POI categories and Full video
     let chosenGroups = getBestChoice(groups, 1, true, (choice) => choice.segments[0].actionType === ActionType.Full);
     chosenGroups = getBestChoice(chosenGroups, 1, true, (choice) => choice.segments[0].actionType === ActionType.Poi);
-    return chosenGroups.map(// choose 1 good segment per group and return them
-        group => getBestChoice(group.segments, 1)[0]
+    return chosenGroups.map(
+        // choose 1 good segment per group and return them
+        (group) => getBestChoice(group.segments, 1)[0]
     );
 }
 
@@ -308,8 +386,9 @@ async function chooseSegments(videoID: VideoID, service: Service, segments: DBSe
 //This allows new less voted items to still sometimes appear to give them a chance at getting votes.
 //Segments with less than -1 votes are already ignored before this function is called
 async function buildSegmentGroups(segments: DBSegment[]): Promise<OverlappingSegmentGroup[]> {
-    const reputationPromises = segments.map(segment =>
-        segment.userID && !db.highLoad() ? getReputation(segment.userID).catch((e) => Logger.error(e)) : null);
+    const reputationPromises = segments.map((segment) =>
+        segment.userID && !db.highLoad() ? getReputation(segment.userID).catch((e) => Logger.error(e)) : null
+    );
 
     //Create groups of segments that are similar to eachother
     //Segments must be sorted by their startTime so that we can build groups chronologically:
@@ -332,7 +411,8 @@ async function buildSegmentGroups(segments: DBSegment[]): Promise<OverlappingSeg
             currentGroup.votes += segment.votes;
         }
 
-        if (segment.userID) segment.reputation = Math.min(segment.reputation, (await reputationPromises[i]) || Infinity);
+        if (segment.userID)
+            segment.reputation = Math.min(segment.reputation, (await reputationPromises[i]) || Infinity);
         if (segment.reputation > 0) {
             currentGroup.reputation += segment.reputation;
         }
@@ -372,12 +452,25 @@ function splitPercentOverlap(groups: OverlappingSegmentGroup[]): OverlappingSegm
                 // At least one segment in the group must have high % overlap or the same action type
                 // Since POI and Full video segments will always have <= 0 overlap, they will always be in their own groups
                 return group.segments.some((compareSegment) => {
-                    const overlap = Math.min(segment.endTime, compareSegment.endTime) - Math.max(segment.startTime, compareSegment.startTime);
-                    const overallDuration = Math.max(segment.endTime, compareSegment.endTime) - Math.min(segment.startTime, compareSegment.startTime);
+                    const overlap =
+                        Math.min(segment.endTime, compareSegment.endTime) -
+                        Math.max(segment.startTime, compareSegment.startTime);
+                    const overallDuration =
+                        Math.max(segment.endTime, compareSegment.endTime) -
+                        Math.min(segment.startTime, compareSegment.startTime);
                     const overlapPercent = overlap / overallDuration;
-                    return (overlapPercent >= 0.1 && segment.actionType === compareSegment.actionType && segment.category === compareSegment.category && segment.actionType !== ActionType.Chapter)
-                        || (overlapPercent >= 0.6 && segment.actionType !== compareSegment.actionType && segment.category === compareSegment.category)
-                        || (overlapPercent >= 0.8 && segment.actionType === ActionType.Chapter && compareSegment.actionType === ActionType.Chapter);
+                    return (
+                        (overlapPercent >= 0.1 &&
+                            segment.actionType === compareSegment.actionType &&
+                            segment.category === compareSegment.category &&
+                            segment.actionType !== ActionType.Chapter) ||
+                        (overlapPercent >= 0.6 &&
+                            segment.actionType !== compareSegment.actionType &&
+                            segment.category === compareSegment.category) ||
+                        (overlapPercent >= 0.8 &&
+                            segment.actionType === ActionType.Chapter &&
+                            compareSegment.actionType === ActionType.Chapter)
+                    );
                 });
             });
 
@@ -388,7 +481,13 @@ function splitPercentOverlap(groups: OverlappingSegmentGroup[]): OverlappingSegm
                 bestGroup.locked ||= segment.locked;
                 bestGroup.required ||= segment.required;
             } else {
-                result.push({ segments: [segment], votes: segment.votes, reputation: segment.reputation, locked: segment.locked, required: segment.required });
+                result.push({
+                    segments: [segment],
+                    votes: segment.votes,
+                    reputation: segment.reputation,
+                    locked: segment.locked,
+                    required: segment.required,
+                });
             }
         });
 
@@ -416,39 +515,10 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
         return res.sendStatus(404);
     }
 
-    await getEtag("skipSegments", (videoID as string), service)
-        .then(etag => res.set("ETag", etag))
+    await getEtag("skipSegments", videoID as string, service)
+        .then((etag) => res.set("ETag", etag))
         .catch(() => null);
     return res.send(segments);
-}
-
-async function oldGetVideoSponsorTimes(req: Request, res: Response): Promise<Response> {
-    const videoID = req.query.videoID as VideoID;
-    if (!videoID) {
-        return res.status(400).send("videoID not specified");
-    }
-
-    const segments = await getSegmentsByVideoID(req, videoID, ["sponsor"] as Category[], [ActionType.Skip], [], Service.YouTube);
-
-    if (segments === null || segments === undefined) {
-        return res.sendStatus(500);
-    } else if (segments.length === 0) {
-        return res.sendStatus(404);
-    }
-
-    // Convert to old outputs
-    const sponsorTimes = [];
-    const UUIDs = [];
-
-    for (const segment of segments) {
-        sponsorTimes.push(segment.segment);
-        UUIDs.push(segment.UUID);
-    }
-
-    return res.send({
-        sponsorTimes,
-        UUIDs,
-    });
 }
 
 const filterRequiredSegments = (UUID: SegmentUUID, requiredSegments: SegmentUUID[]): boolean => {
@@ -458,9 +528,4 @@ const filterRequiredSegments = (UUID: SegmentUUID, requiredSegments: SegmentUUID
     return false;
 };
 
-export {
-    getSegmentsByVideoID,
-    getSegmentsByHash,
-    getSkipSegments,
-    oldGetVideoSponsorTimes
-};
+export { getSegmentsByVideoID, getSegmentsByHash, getSkipSegments };
