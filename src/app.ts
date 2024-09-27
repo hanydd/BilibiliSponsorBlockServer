@@ -224,4 +224,3 @@ function setupRoutes(router: Router, server: Server) {
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
 }
-/* eslint-enable @typescript-eslint/no-misused-promises */
