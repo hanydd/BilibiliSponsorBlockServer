@@ -17,11 +17,12 @@ const credentials: ExecOptions = {
     },
 };
 
-function dumpDatabase() {
+async function dumpDatabase() {
     const tables = config.dumpDatabase.tables;
     const currentTimestamp = Date.now();
     const currentDate = new Date().toISOString().slice(0, 10);
-    const exportDir = `${config.dumpDatabase.appExportPath}/${currentDate}-${currentTimestamp}`;
+    const baseExportDir = config.dumpDatabase.appExportPath;
+    const exportDir = `${baseExportDir}/${currentDate}-${currentTimestamp}`;
 
     // create a new export dir for this dump
     if (!fs.existsSync(exportDir)) {
@@ -40,4 +41,17 @@ function dumpDatabase() {
             }
         });
     }
+
+    // wait 10s for the dump to finish
+    await new Promise((resolve) => setTimeout(resolve, 10000));
+
+    // pack the exported files
+    const zipCommand = `zip -r -9 -Z bzip2 ${baseExportDir}/latest.zip ${exportDir}/*`;
+    exec(zipCommand, (error, stdout, stderr) => {
+        if (error) {
+            Logger.error(`[dumpDatabase] Failed to pack the export files due to ${stderr}`);
+        } else {
+            Logger.info(`[dumpDatabase] Export files packed to ${baseExportDir}/latest.zip, ${stdout}`);
+        }
+    });
 }
