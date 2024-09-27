@@ -1,62 +1,61 @@
-import express, { Request, RequestHandler, Response, Router } from "express";
-import { config } from "./config";
-import { postSegmentShift } from "./routes/postSegmentShift";
-import { postWarning } from "./routes/postWarning";
-import { getIsUserVIP } from "./routes/getIsUserVIP";
-import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
-import { postLockCategories } from "./routes/postLockCategories";
-import { endpoint as getUserInfo } from "./routes/getUserInfo";
-import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
-import { getTotalStats } from "./routes/getTotalStats";
-import { getTopUsers } from "./routes/getTopUsers";
-import { getViewsForUser } from "./routes/getViewsForUser";
-import { getSavedTimeForUser } from "./routes/getSavedTimeForUser";
-import { addUserAsVIP } from "./routes/addUserAsVIP";
-import { shadowBanUser } from "./routes/shadowBanUser";
-import { getUsername } from "./routes/getUsername";
-import { setUsername } from "./routes/setUsername";
-import { viewedVideoSponsorTime } from "./routes/viewedVideoSponsorTime";
-import { voteOnSponsorTime, getUserID as voteGetUserID } from "./routes/voteOnSponsorTime";
-import { getSkipSegmentsByHash } from "./routes/getSkipSegmentsByHash";
-import { postSkipSegments } from "./routes/postSkipSegments";
-import { getSkipSegments } from "./routes/getSkipSegments";
-import { userCounter } from "./middleware/userCounter";
-import { loggerMiddleware } from "./middleware/logger";
-import { corsMiddleware } from "./middleware/cors";
-import { apiCspMiddleware } from "./middleware/apiCsp";
-import { rateLimitMiddleware } from "./middleware/requestRateLimit";
-import dumpDatabase from "./routes/dumpDatabase";
-import { endpoint as getSegmentInfo } from "./routes/getSegmentInfo";
-import { postClearCache } from "./routes/postClearCache";
-import { addUnlistedVideo } from "./routes/addUnlistedVideo";
-import { postPurgeAllSegments } from "./routes/postPurgeAllSegments";
-import { getUserID } from "./routes/getUserID";
-import { getLockCategories } from "./routes/getLockCategories";
-import { getLockCategoriesByHash } from "./routes/getLockCategoriesByHash";
-import { endpoint as getSearchSegments } from "./routes/getSearchSegments";
-import { getStatus } from "./routes/getStatus";
-import { getLockReason } from "./routes/getLockReason";
-import { getUserStats } from "./routes/getUserStats";
+import express, { RequestHandler, Router } from "express";
 import ExpressPromiseRouter from "express-promise-router";
 import { Server } from "http";
-import { youtubeApiProxy } from "./routes/youtubeApiProxy";
-import { getChapterNames } from "./routes/getChapterNames";
-import { getTopCategoryUsers } from "./routes/getTopCategoryUsers";
-import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
-import { endpoint as getVideoLabels } from "./routes/getVideoLabel";
-import { getVideoLabelsByHash } from "./routes/getVideoLabelByHash";
-import { addFeature } from "./routes/addFeature";
-import { generateTokenRequest } from "./routes/generateToken";
-import { verifyTokenRequest } from "./routes/verifyToken";
-import { getBranding, getBrandingByHashEndpoint } from "./routes/getBranding";
-import { postBranding } from "./routes/postBranding";
+import { config } from "./config";
+import { apiCspMiddleware } from "./middleware/apiCsp";
+import { corsMiddleware } from "./middleware/cors";
 import { cacheMiddlware } from "./middleware/etag";
 import { hostHeader } from "./middleware/hostHeader";
+import { loggerMiddleware } from "./middleware/logger";
+import { rateLimitMiddleware } from "./middleware/requestRateLimit";
+import { userCounter } from "./middleware/userCounter";
+import { addFeature } from "./routes/addFeature";
+import { addUnlistedVideo } from "./routes/addUnlistedVideo";
+import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
+import { addUserAsVIP } from "./routes/addUserAsVIP";
+import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
+import { generateTokenRequest } from "./routes/generateToken";
+import { getBranding, getBrandingByHashEndpoint } from "./routes/getBranding";
+import { getChapterNames } from "./routes/getChapterNames";
+import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
-import { getReady } from "./routes/getReady";
+import { getIsUserVIP } from "./routes/getIsUserVIP";
+import { getLockCategories } from "./routes/getLockCategories";
+import { getLockCategoriesByHash } from "./routes/getLockCategoriesByHash";
+import { getLockReason } from "./routes/getLockReason";
 import { getPortVideo, getPortVideoByHash } from "./routes/getPortVideo";
+import { getReady } from "./routes/getReady";
+import { getSavedTimeForUser } from "./routes/getSavedTimeForUser";
+import { endpoint as getSearchSegments } from "./routes/getSearchSegments";
+import { endpoint as getSegmentInfo } from "./routes/getSegmentInfo";
+import { getSkipSegments } from "./routes/getSkipSegments";
+import { getSkipSegmentsByHash } from "./routes/getSkipSegmentsByHash";
+import { getStatus } from "./routes/getStatus";
+import { getTopCategoryUsers } from "./routes/getTopCategoryUsers";
+import { getTopUsers } from "./routes/getTopUsers";
+import { getTotalStats } from "./routes/getTotalStats";
+import { getUserID } from "./routes/getUserID";
+import { endpoint as getUserInfo } from "./routes/getUserInfo";
+import { getUsername } from "./routes/getUsername";
+import { getUserStats } from "./routes/getUserStats";
+import { endpoint as getVideoLabels } from "./routes/getVideoLabel";
+import { getVideoLabelsByHash } from "./routes/getVideoLabelByHash";
+import { getViewsForUser } from "./routes/getViewsForUser";
+import { postBranding } from "./routes/postBranding";
+import { postClearCache } from "./routes/postClearCache";
+import { postLockCategories } from "./routes/postLockCategories";
 import { postPortVideo } from "./routes/postPortVideo";
+import { postPurgeAllSegments } from "./routes/postPurgeAllSegments";
+import { postSegmentShift } from "./routes/postSegmentShift";
+import { postSkipSegments } from "./routes/postSkipSegments";
+import { postWarning } from "./routes/postWarning";
+import { setUsername } from "./routes/setUsername";
+import { shadowBanUser } from "./routes/shadowBanUser";
+import { verifyTokenRequest } from "./routes/verifyToken";
+import { viewedVideoSponsorTime } from "./routes/viewedVideoSponsorTime";
 import { voteOnPortVideo } from "./routes/voteOnPortVideo";
+import { getUserID as voteGetUserID, voteOnSponsorTime } from "./routes/voteOnSponsorTime";
+import { youtubeApiProxy } from "./routes/youtubeApiProxy";
 
 export function createServer(callback: () => void): Server {
     // Create a service (the app object is just a callback).
@@ -224,21 +223,5 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/portVideo/:prefix", getPortVideoByHash);
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
-
-    /* istanbul ignore next */
-    if (config.postgres?.enabled) {
-        router.get("/database", (req, res) => dumpDatabase(req, res, true));
-        router.get("/database.json", (req, res) => dumpDatabase(req, res, false));
-        router.get("/database/*", (req, res) =>
-            res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync")
-        );
-        router.use("/download", (req, res) =>
-            res.status(404).send("CSV downloads disabled. Please use sb-mirror rsync")
-        );
-    } else {
-        router.get("/database.db", function (req: Request, res: Response) {
-            res.sendFile("./databases/sponsorTimes.db", { root: "./" });
-        });
-    }
 }
 /* eslint-enable @typescript-eslint/no-misused-promises */

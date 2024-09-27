@@ -1,6 +1,6 @@
-import { Logger } from "../utils/logger";
 import { config } from "../config";
-import DownvoteSegmentArchiveJob from "./downvoteSegmentArchiveJob";
+import { Logger } from "../utils/logger";
+import { dumpDatebaseJob } from "./dumpDatabase";
 import refreshTopUserViewJob from "./refreshTopUserView";
 
 export function startAllCrons(): void {
@@ -8,6 +8,7 @@ export function startAllCrons(): void {
         Logger.info("Crons started");
 
         refreshTopUserViewJob.start();
+        dumpDatebaseJob.start();
     } else {
         Logger.info("Crons dissabled");
     }
