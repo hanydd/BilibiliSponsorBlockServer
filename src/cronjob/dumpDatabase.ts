@@ -46,7 +46,7 @@ async function dumpDatabase() {
     await new Promise((resolve) => setTimeout(resolve, 10000));
 
     // pack the exported files
-    const zipCommand = `zip -r -9 ${baseExportDir}/database.zip - j ${exportDir}/`;
+    const zipCommand = `zip -r -9 ${baseExportDir}/database.zip -j ${exportDir}/`;
     exec(zipCommand, (error, stdout, stderr) => {
         if (error) {
             Logger.error(`[dumpDatabase] Failed to pack the export files due to ${stderr}`);
