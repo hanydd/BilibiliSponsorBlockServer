@@ -21,6 +21,7 @@ import { getIP } from "../utils/getIP";
 import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../utils/redisLock";
 import { vote as votePortVideo } from "./voteOnPortVideo";
+import { saveVideoInfo } from "../dao/videoInfo";
 
 type CheckResult = {
     pass: boolean;
@@ -263,12 +264,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     QueryCacher.clearSegmentCache({ videoID: bvID, hashedVideoID: hashedBvID, service: Service.YouTube });
 
     try {
-        await db.prepare(
-            "run",
-            `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
-            WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
-            [bvID, biliVideoDetail?.authorId || "", biliVideoDetail?.title || "", biliVideoDetail?.published || 0, bvID]
-        );
+        await saveVideoInfo(biliVideoDetail);
 
         await db.prepare(
             "run",
