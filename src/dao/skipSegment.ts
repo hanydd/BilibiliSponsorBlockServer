@@ -50,12 +50,24 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
     return await QueryCacher.get(fetchFromDB, skipSegmentsKey(videoID, service));
 }
 
-export async function hideByUUID(UUIDs: string[], hiddenType = HiddenType.MismatchHidden): Promise<void> {
+/**
+ * hide segments by UUID from the same video,
+ * provide the video id to clear redis cache
+ */
+export async function hideByUUID(
+    UUIDs: string[],
+    bvID: VideoID,
+    hiddenType = HiddenType.MismatchHidden
+): Promise<void> {
+    if (UUIDs.length === 0) {
+        return;
+    }
     await db.prepare(
         "run",
         `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`,
         [hiddenType, ...UUIDs]
     );
+    QueryCacher.clearSegmentCacheByID(bvID);
 }
 
 export function createSegmentsFromYTB(
@@ -154,6 +166,10 @@ export async function saveNewSegments(segments: DBSegment[], hashedIP: HashedIP 
         VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
         privateSponsorTime.flat()
     );
+
+    // clear redis cache
+    const videoIDSet = new Set(segments.map((s) => s.videoID));
+    videoIDSet.forEach((videoID) => QueryCacher.clearSegmentCacheByID(videoID));
 }
 
 export async function updateVotes(segments: DBSegment[]): Promise<void> {
@@ -171,4 +187,8 @@ export async function updateVotes(segments: DBSegment[]): Promise<void> {
         AS f("UUID", "votes") WHERE "sponsorTimes"."UUID" = f."UUID"`,
         segmentVotes.flat()
     );
+
+    // clear redis cache
+    const videoIDSet = new Set(segments.map((s) => s.videoID));
+    videoIDSet.forEach((videoID) => QueryCacher.clearSegmentCacheByID(videoID));
 }

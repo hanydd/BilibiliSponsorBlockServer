@@ -86,7 +86,10 @@ export async function getSegmentsFromSB(portVideo: PortVideoDB) {
     const updatingSegments = portedSegments.filter((s) => ytbSegmentsMap.has(s.ytbSegmentUUID));
 
     // update votes for existing segments
-    updatingSegments.forEach((s) => (s.votes = ytbSegmentsMap.get(s.ytbSegmentUUID).votes));
+    updatingSegments.forEach((s) => {
+        s.videoID = bvID;
+        s.votes = ytbSegmentsMap.get(s.ytbSegmentUUID).votes;
+    });
 
     // crate new segments
     const timeSubmitted = Date.now();
@@ -103,7 +106,10 @@ export async function getSegmentsFromSB(portVideo: PortVideoDB) {
 
     // db operations
     Logger.info(`remove segments: ${truelyRemovedSegments.map((s) => s.UUID)}`);
-    await hideByUUID(truelyRemovedSegments.map((s) => s.UUID));
+    await hideByUUID(
+        truelyRemovedSegments.map((s) => s.UUID),
+        bvID
+    );
 
     Logger.info(`new segments: ${saveSegment.map((s) => s.UUID)}`);
     await saveNewSegments(saveSegment);

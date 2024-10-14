@@ -3,6 +3,7 @@ import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { Feature, HashedUserID, UserID } from "../types/user.model";
 import { Logger } from "../utils/logger";
 import redis, { TooManyActiveConnectionsError } from "../utils/redis";
+import { getHash } from "./getHash";
 import {
     brandingHashKey,
     brandingKey,
@@ -168,6 +169,12 @@ function clearSegmentCache(videoInfo: {
     }
 }
 
+function clearSegmentCacheByID(videoID: VideoID): void {
+    if (videoID) {
+        clearSegmentCache({ videoID: videoID, hashedVideoID: getHash(videoID, 1), service: Service.YouTube });
+    }
+}
+
 function clearBrandingCache(videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service }): void {
     if (videoInfo) {
         redis.del(brandingHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
@@ -223,6 +230,7 @@ export const QueryCacher = {
     getAndSplit,
     clearKey,
     clearSegmentCache,
+    clearSegmentCacheByID,
     clearBrandingCache,
     getKeyLastModified,
     clearRatingCache,
