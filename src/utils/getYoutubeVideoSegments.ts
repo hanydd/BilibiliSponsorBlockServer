@@ -16,7 +16,7 @@ export function getYoutubeSegments(
         videoID: ytbID,
         categories: `["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro","outro","preview","filler","music_offtopic"]`,
         actionTypes: `["skip","poi","mute","full"]`,
-        requiredSegments: requiredSegments.join(","),
+        requiredSegments: `[${requiredSegments.map((id) => `"${id}"`).join(",")}]`,
     };
     return axios
         .get(`https://sponsor.ajay.app/api/skipSegments`, { params: params, timeout: timeout })
