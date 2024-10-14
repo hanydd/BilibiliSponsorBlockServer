@@ -51,10 +51,11 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
 }
 
 export async function hideByUUID(UUIDs: string[], hiddenType = HiddenType.MismatchHidden): Promise<void> {
-    await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (?)`, [
-        hiddenType,
-        UUIDs.map((uuid) => `'${uuid}'`).join(","),
-    ]);
+    await db.prepare(
+        "run",
+        `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`,
+        [hiddenType, ...UUIDs]
+    );
 }
 
 export function createSegmentsFromYTB(
