@@ -106,6 +106,9 @@ export function createSegmentsFromYTB(
  * Save segments to the database
  */
 export async function saveNewSegments(segments: DBSegment[], hashedIP: HashedIP = "" as HashedIP): Promise<void> {
+    if (segments.length === 0) {
+        return;
+    }
     const sponsorTime = [];
     const privateSponsorTime = [];
 
@@ -153,6 +156,9 @@ export async function saveNewSegments(segments: DBSegment[], hashedIP: HashedIP 
 }
 
 export async function updateVotes(segments: DBSegment[]): Promise<void> {
+    if (segments.length === 0) {
+        return;
+    }
     const segmentVotes = [];
     for (const s of segments) {
         segmentVotes.push([s.UUID, s.votes]);
