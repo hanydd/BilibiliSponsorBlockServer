@@ -1,9 +1,14 @@
 import { Request, Response } from "express";
-import { getPortVideoByBvIDCached, getPortVideoByHashPrefixCached, getPortVideoDBByBvIDCached } from "../dao/portVideo";
+import {
+    getPortVideoByBvIDCached,
+    getPortVideoByHashPrefixCached,
+    getPortVideoDBByBvIDCached,
+    hidePortVideoByUUID,
+} from "../dao/portVideo";
 import {
     createSegmentsFromYTB,
     getSegmentsFromDBByVideoID,
-    hideByUUID,
+    hideSegmentsByUUID,
     saveNewSegments,
     updateVotes,
 } from "../dao/skipSegment";
@@ -22,30 +27,32 @@ export async function updatePortedSegments(req: Request, res: Response) {
     const bvid = req.body.videoID as VideoID;
 
     const portVideoRecord = await getPortVideoDBByBvIDCached(bvid);
-    await getSegmentsFromSB(portVideoRecord[0]);
+    await updateSegmentsFromSB(portVideoRecord[0]);
     return res.sendStatus(200);
 }
 
-export async function getSegmentsFromSB(portVideo: PortVideoDB) {
+export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
     const bvID = portVideo.bvID;
     const ytbID = portVideo.ytbID;
     const [ytbSegments, biliVideoDetail] = await Promise.all([getYoutubeSegments(ytbID), getVideoDetails(bvID, true)]);
     // get ytb video duration
-    let ytbDuration = 0 as VideoDuration;
+    let apiYtbDuration = 0 as VideoDuration;
     if (ytbSegments && ytbSegments.length > 0) {
-        ytbDuration = average(
+        apiYtbDuration = average(
             ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)
         ) as VideoDuration;
-        Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
+        Logger.info(
+            `Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${apiYtbDuration}s`
+        );
     }
-    if (!ytbDuration) {
-        ytbDuration = await getYoutubeVideoDuraion(ytbID);
+    if (!apiYtbDuration) {
+        apiYtbDuration = await getYoutubeVideoDuraion(ytbID);
     }
     // video duration check
     const dbBiliDuration = portVideo.biliDuration;
     const dbYtbDuration = portVideo.biliDuration;
     // we need all four durations to match to proceed
-    if (!ytbDuration) {
+    if (!apiYtbDuration) {
         // if no youtube duration is provided, dont't do anything
         return;
     }
@@ -54,16 +61,30 @@ export async function getSegmentsFromSB(portVideo: PortVideoDB) {
         // if no bili duration is found, dont't do anything
         return;
     }
-    if (!durationEquals(dbBiliDuration, apiBiliDuration)) {
-        // TODO invalidate all segmetns, including the user submitted ones
-        return;
-    }
 
     // get all port segments
     const allDBSegments = await getSegmentsFromDBByVideoID(bvID, Service.YouTube);
     const portedSegments = allDBSegments.filter((s) => s.portUUID === portVideo.UUID);
     const existingYoutubeSegmentUUIDs = new Set(portedSegments.map((s) => s.ytbSegmentUUID));
     const ytbSegmentsMap = new Map(ytbSegments.map((s) => [s.UUID, s]));
+
+    if (!durationEquals(dbBiliDuration, apiBiliDuration)) {
+        // invalidate all segmetns, including the user submitted ones
+        await hideSegmentsByUUID(
+            allDBSegments.map((s) => s.UUID),
+            bvID
+        );
+        return;
+    }
+    if (!durationsAllEqual([dbBiliDuration, apiBiliDuration, dbYtbDuration, apiYtbDuration])) {
+        // invalidate all ported segmetns, and port video record
+        await hideSegmentsByUUID(
+            portedSegments.map((s) => s.UUID),
+            bvID
+        );
+        await hidePortVideoByUUID(portVideo.UUID, bvID);
+        return;
+    }
 
     // request removed segments again to ensure that they are removed
     const removedSegments = portedSegments.filter((s) => !ytbSegmentsMap.has(s.ytbSegmentUUID));
@@ -106,7 +127,7 @@ export async function getSegmentsFromSB(portVideo: PortVideoDB) {
 
     // db operations
     Logger.info(`remove segments: ${truelyRemovedSegments.map((s) => s.UUID)}`);
-    await hideByUUID(
+    await hideSegmentsByUUID(
         truelyRemovedSegments.map((s) => s.UUID),
         bvID
     );

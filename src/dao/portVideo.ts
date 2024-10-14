@@ -1,6 +1,7 @@
 import { db } from "../databases/databases";
 import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
-import { VideoID } from "../types/segments.model";
+import { HiddenType, VideoID } from "../types/segments.model";
+import { getHash } from "../utils/getHash";
 import { QueryCacher } from "../utils/queryCacher";
 import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../utils/redisKeys";
 
@@ -62,6 +63,19 @@ async function getPortVideoUserCountFromDB(): Promise<Record<string, number>> {
         portVideoCounts[element.userName] = element.portVideoSubmissions;
     });
     return portVideoCounts;
+}
+
+/**
+ * hide port video record by UUID
+ * video id is used to clear redis cache
+ */
+export async function hidePortVideoByUUID(
+    UUID: string,
+    bvID: VideoID,
+    hiddenType = HiddenType.MismatchHidden
+): Promise<void> {
+    await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" = ?`, [hiddenType, UUID]);
+    QueryCacher.clearPortVideoCache(bvID, getHash(bvID, 1));
 }
 
 export function getPortVideoUserCount(): Promise<Record<string, number>> {

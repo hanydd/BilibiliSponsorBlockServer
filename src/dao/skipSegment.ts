@@ -54,7 +54,7 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
  * hide segments by UUID from the same video,
  * provide the video id to clear redis cache
  */
-export async function hideByUUID(
+export async function hideSegmentsByUUID(
     UUIDs: string[],
     bvID: VideoID,
     hiddenType = HiddenType.MismatchHidden
