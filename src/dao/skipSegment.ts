@@ -166,7 +166,7 @@ export async function updateVotes(segments: DBSegment[]): Promise<void> {
     await db.prepare(
         "run",
         `UPDATE "sponsorTimes" SET "votes" = f."votes"
-        FROM (VALUES ${Array(segments.length).fill("(?, ?)").join(",")})
+        FROM (VALUES ${Array(segments.length).fill("(?::TEXT, ?::INT)").join(",")})
         AS f("UUID", "votes") WHERE "sponsorTimes"."UUID" = f."UUID"`,
         segmentVotes.flat()
     );
