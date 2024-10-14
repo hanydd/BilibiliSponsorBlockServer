@@ -1,6 +1,6 @@
 import { getHash } from "./getHash";
 import { HashedValue } from "../types/hash.model";
-import { ActionType, VideoID, Service, Category, VideoDuration } from "../types/segments.model";
+import { ActionType, VideoID, Service, Category, VideoDuration, SegmentUUID } from "../types/segments.model";
 import { HashedUserID } from "../types/user.model";
 
 export function getSubmissionUUID(
@@ -27,6 +27,6 @@ export function getMatchVideoUUID(
     return `${getHash(`${bvID}${ytbID}${userID}${biliDuration}${ytbDuration}${timeSubmitted}`, 1)}8` as HashedValue;
 }
 
-export function getPortSegmentUUID(bvID: VideoID, ytbID: VideoID, ytbUUID: string, timeSubmitted: number): HashedValue {
-    return `${getHash(`${bvID}${ytbID}${ytbUUID}${timeSubmitted}`)}9` as HashedValue;
+export function getPortSegmentUUID(bvID: VideoID, ytbID: VideoID, ytbUUID: string, timeSubmitted: number): SegmentUUID {
+    return `${getHash(`${bvID}${ytbID}${ytbUUID}${timeSubmitted}`)}9` as SegmentUUID;
 }
