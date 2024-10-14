@@ -23,7 +23,7 @@ import { getIsUserVIP } from "./routes/getIsUserVIP";
 import { getLockCategories } from "./routes/getLockCategories";
 import { getLockCategoriesByHash } from "./routes/getLockCategoriesByHash";
 import { getLockReason } from "./routes/getLockReason";
-import { getPortVideo, getPortVideoByHash } from "./routes/getPortVideo";
+import { getPortVideo, getPortVideoByHash, updatePortedSegments } from "./routes/getPortVideo";
 import { getReady } from "./routes/getReady";
 import { getSavedTimeForUser } from "./routes/getSavedTimeForUser";
 import { endpoint as getSearchSegments } from "./routes/getSearchSegments";
@@ -223,4 +223,6 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/portVideo/:prefix", getPortVideoByHash);
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
+
+    router.post("/api/updatePortedSegments", updatePortedSegments);
 }
