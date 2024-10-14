@@ -1,18 +1,25 @@
 import axios from "axios";
-import { ISODurationRegex, parseISODurationToVideoDuration } from "./durationUtil";
 import { config } from "../config";
-import { Segment, VideoDuration } from "../types/segments.model";
+import { Segment, SegmentUUID, VideoDuration } from "../types/segments.model";
+import { ISODurationRegex, parseISODurationToVideoDuration } from "./durationUtil";
 import { Logger } from "./logger";
 
 const ytbTimeRegex = new RegExp(`"duration: ?(${ISODurationRegex.source}|no result)"`);
 
-export function getYoutubeSegments(ytbID: string, timeout = 10000): Promise<Segment[] | null> {
+export function getYoutubeSegments(
+    ytbID: string,
+    requiredSegments: SegmentUUID[] = [],
+    timeout = 10000
+): Promise<Segment[] | null> {
     Logger.info(`Getting segments from the SB service: ${ytbID}`);
+    const params = {
+        videoID: ytbID,
+        categories: `["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro","outro","preview","filler","music_offtopic"]`,
+        actionTypes: `["skip","poi","mute","full"]`,
+        requiredSegments: requiredSegments.join(","),
+    };
     return axios
-        .get(
-            `https://sponsor.ajay.app/api/skipSegments?videoID=${ytbID}&categories=["sponsor","poi_highlight","exclusive_access","selfpromo","interaction","intro","outro","preview","filler","music_offtopic"]&actionTypes=["skip","poi","mute","full"]`,
-            { timeout: timeout }
-        )
+        .get(`https://sponsor.ajay.app/api/skipSegments`, { params: params, timeout: timeout })
         .then((res) => {
             return res?.data;
         })
