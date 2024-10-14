@@ -1,5 +1,5 @@
 import { db } from "../databases/databases";
-import { PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
+import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { VideoID } from "../types/segments.model";
 import { QueryCacher } from "../utils/queryCacher";
 import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../utils/redisKeys";
@@ -7,14 +7,23 @@ import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } fro
 function getPortVideoDBByBvID(bvID: VideoID, downvoteThreshold = -2): Promise<PortVideoDB[]> {
     return db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration" FROM "portVideo"
+        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "userID", "userAgent" FROM "portVideo"
         WHERE "bvID" = ? AND "hidden" = 0 AND "votes" > ?`,
         [bvID, downvoteThreshold]
     );
 }
 
-export function getPortVideoByBvIDCached(bvID: VideoID): Promise<PortVideoDB[]> {
+export function getPortVideoDBByBvIDCached(bvID: VideoID): Promise<PortVideoDB[]> {
     return QueryCacher.get(() => getPortVideoDBByBvID(bvID), portVideoCacheKey(bvID));
+}
+
+export async function getPortVideoByBvIDCached(bvID: VideoID): Promise<PortVideo[]> {
+    const portVideoDB = await QueryCacher.get(() => getPortVideoDBByBvID(bvID), portVideoCacheKey(bvID));
+    portVideoDB.forEach((element) => {
+        delete element["userID"];
+        delete element["userAgent"];
+    });
+    return portVideoDB;
 }
 
 function getPortVideoDBByHashPrefix(hashPrefix: string): Promise<PortVideoInterface[]> {
