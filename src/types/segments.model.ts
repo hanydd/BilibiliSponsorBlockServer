@@ -146,5 +146,5 @@ export enum VoteType {
 export enum HiddenType {
     Show = 0,
     Hidden = 1,
-    MismatchHidden = 2, // hidden due to port video downvote
+    MismatchHidden = 2, // hidden due to port video downvote, or ported segments deletion
 }
