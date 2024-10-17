@@ -38,12 +38,11 @@ SELECT
 FROM (
         SELECT count(*) AS "portVideoSubmissions",
             sum("portVideo".votes) AS "userVotes",
-            COALESCE("userNames"."userName", "portVideo"."userID") AS "userName"
+            "portVideo"."userID" AS "userName"
         FROM "portVideo"
-            LEFT JOIN "userNames" ON ("portVideo"."userID" = "userNames"."userID")
             LEFT JOIN "shadowBannedUsers" ON ("portVideo"."userID" = "shadowBannedUsers"."userID")
         WHERE "portVideo".votes > -2 AND "portVideo".hidden = 0 AND "shadowBannedUsers"."userID" IS NULL
-        GROUP BY COALESCE("userNames"."userName", "portVideo"."userID")
+        GROUP BY "portVideo"."userID"
     ) port
     FULL JOIN
     (
@@ -62,12 +61,11 @@ FROM (
             sum(CASE WHEN ("sponsorTimes".category = 'poi_highlight') THEN 1 ELSE 0 END) AS "categorySumHighlight",
             sum(CASE WHEN ("sponsorTimes".category = 'filler') THEN 1 ELSE 0 END) AS "categorySumFiller",
             sum(CASE WHEN ( "sponsorTimes".category = 'exclusive_access') THEN 1 ELSE 0 END) AS "categorySumExclusiveAccess",
-            COALESCE("userNames"."userName", "sponsorTimes"."userID") AS "userName"
+            "sponsorTimes"."userID" AS "userName"
         FROM "sponsorTimes"
-            LEFT JOIN "userNames" ON ("sponsorTimes"."userID" = "userNames"."userID")
             LEFT JOIN "shadowBannedUsers" ON ("sponsorTimes"."userID" = "shadowBannedUsers"."userID")
         WHERE "sponsorTimes".votes > -2 AND "sponsorTimes"."shadowHidden" <> 1 AND "shadowBannedUsers"."userID" IS NULL
-        GROUP BY COALESCE("userNames"."userName", "sponsorTimes"."userID")
+        GROUP BY "sponsorTimes"."userID"
     ) sponsor
     ON ((port."userName" = sponsor."userName"))
 )`
