@@ -22,9 +22,16 @@ import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getVideoDetails } from "../utils/getVideoDetails";
 import { getYoutubeSegments, getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { Logger } from "../utils/logger";
+import { acquireLock } from "../utils/redisLock";
 
 export async function updatePortedSegments(req: Request, res: Response) {
     const bvid = req.body.videoID as VideoID;
+
+    // do not release lock, but wait 1h for the lock to expire
+    const lock = await acquireLock(`updatePortSegment:${bvid}`, 1000 * 60 * 60);
+    if (!lock.status) {
+        return res.status(429).send("已经有人刷新过啦，每小时只能刷新一次！");
+    }
 
     const portVideoRecord = await getPortVideoDBByBvIDCached(bvid);
     await updateSegmentsFromSB(portVideoRecord[0]);
