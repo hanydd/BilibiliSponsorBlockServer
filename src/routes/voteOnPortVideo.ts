@@ -3,7 +3,7 @@ import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.mode
 import { HashedUserID, UserID } from "../types/user.model";
 import { getIP } from "../utils/getIP";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock, forceUnLock } from "../utils/redisLock";
 import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
 import { db, privateDB } from "../databases/databases";
 import { validate } from "../utils/bilibiliID";
@@ -156,6 +156,8 @@ export async function vote(
                 HiddenType.MismatchHidden,
                 UUID,
             ]);
+            // try unlock update timer
+            await forceUnLock(`updatePortSegment:${bvID}`);
         } else if (newVote > -2 && oldVote <= -2) {
             await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "portUUID" = ? AND hidden = ?`, [
                 HiddenType.Show,

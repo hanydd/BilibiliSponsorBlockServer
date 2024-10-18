@@ -49,3 +49,15 @@ export async function acquireLock(key: string, timeout = defaultTimeout): Promis
         status: false
     };
 }
+
+export async function forceUnLock(key: string): Promise<void> {
+    if (!config.redis?.enabled) {
+        return;
+    }
+
+    try {
+        redis.del(key).catch((err) => Logger.error(err));
+    } catch (e) {
+        Logger.error(e as string);
+    }
+}

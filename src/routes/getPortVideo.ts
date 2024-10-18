@@ -34,6 +34,7 @@ export async function updatePortedSegments(req: Request, res: Response) {
 
     const portVideoRecord = await getPortVideoDBByBvIDCached(bvid);
     if (!portVideoRecord || portVideoRecord.length === 0) {
+        lock.unlock();
         return res.sendStatus(404);
     }
     await updateSegmentsFromSB(portVideoRecord[0]);
