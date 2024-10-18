@@ -12,10 +12,9 @@ import {
     saveNewSegments,
     updateVotes,
 } from "../dao/skipSegment";
-import { db } from "../databases/databases";
 import { HashedValue } from "../types/hash.model";
 import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
-import { DBSegment, HiddenType, Service, VideoDuration, VideoID } from "../types/segments.model";
+import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { average } from "../utils/array";
 import { validate } from "../utils/bilibiliID";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
