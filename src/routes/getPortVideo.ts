@@ -148,7 +148,6 @@ export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
 
 export async function getPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.videoID as VideoID;
-    const duration = parseFloat(req.query.duration as string) || 0;
 
     // validate parameters
     if (!validate(bvID)) {
@@ -167,10 +166,6 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
     }
 
     const portVideo = portVideoInfo[0];
-
-    if (duration > 0) {
-        await checkDuration(portVideo, duration);
-    }
 
     return res.json({
         bvID: portVideo.bvID,
@@ -196,21 +191,4 @@ export async function getPortVideoByHash(req: Request, res: Response): Promise<R
         return res.sendStatus(404);
     }
     return res.json(portVideoInfo);
-}
-
-async function checkDuration(portVideo: PortVideo, duration: number): Promise<boolean> {
-    if (durationsAllEqual([duration, portVideo.biliDuration, portVideo.ytbDuration])) {
-        return true;
-    }
-
-    // duration mismatch, use api to get the correct duration
-
-    // mark the record as invalid
-    await db.prepare("run", `UPDATE "portVideo" SET "hidden" = 1 WHERE "UUID" = ?`, [portVideo.UUID]);
-    await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "portUUID" = ?`, [
-        HiddenType.MismatchHidden,
-        portVideo.UUID,
-    ]);
-
-    return false;
 }
