@@ -208,6 +208,7 @@ function clearFeatureCache(userID: HashedUserID, feature: Feature): void {
 function clearPortVideoCache(videoID: VideoID, prefix: string): void {
     redis.del(portVideoCacheKey(videoID)).catch((err) => Logger.error(err));
     redis.del(portVideoByHashCacheKey(prefix)).catch((err) => Logger.error(err));
+    redis.del(`updatePortSegment:${videoID}`).catch((err) => Logger.error(err));
 }
 
 function clearTopUserCache(): void {

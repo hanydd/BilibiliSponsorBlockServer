@@ -11,6 +11,8 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { config } from "../config";
 import { Logger } from "../utils/logger";
 import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { QueryCacher } from "../utils/queryCacher";
+import { getHash } from "../utils/getHash";
 
 export async function voteOnPortVideo(req: Request, res: Response): Promise<Response> {
     const UUID = req.body.UUID as portVideoUUID;
@@ -156,14 +158,18 @@ export async function vote(
                 HiddenType.MismatchHidden,
                 UUID,
             ]);
-            // try unlock update timer
-            await forceUnLock(`updatePortSegment:${bvID}`);
+            // clear redis cache
+            QueryCacher.clearPortVideoCache(bvID, getHash(bvID, 1));
+            QueryCacher.clearSegmentCacheByID(bvID);
         } else if (newVote > -2 && oldVote <= -2) {
             await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "portUUID" = ? AND hidden = ?`, [
                 HiddenType.Show,
                 UUID,
                 HiddenType.MismatchHidden,
             ]);
+            // clear redis cache
+            QueryCacher.clearPortVideoCache(bvID, getHash(bvID, 1));
+            QueryCacher.clearSegmentCacheByID(bvID);
         }
     } catch (err) {
         Logger.error(err as string);
