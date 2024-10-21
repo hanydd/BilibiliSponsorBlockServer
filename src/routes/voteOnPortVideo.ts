@@ -1,18 +1,18 @@
 import { Request, Response } from "express";
+import { config } from "../config";
+import { db, privateDB } from "../databases/databases";
+import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
 import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { getIP } from "../utils/getIP";
-import { getHashCache, getHashedIP } from "../utils/getHashCache";
-import { acquireLock, forceUnLock } from "../utils/redisLock";
-import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
-import { db, privateDB } from "../databases/databases";
 import { validate } from "../utils/bilibiliID";
-import { isUserVIP } from "../utils/isUserVIP";
-import { config } from "../config";
-import { Logger } from "../utils/logger";
-import { isUserTempVIP } from "../utils/isUserTempVIP";
-import { QueryCacher } from "../utils/queryCacher";
 import { getHash } from "../utils/getHash";
+import { getHashCache, getHashedIP } from "../utils/getHashCache";
+import { getIP } from "../utils/getIP";
+import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { isUserVIP } from "../utils/isUserVIP";
+import { Logger } from "../utils/logger";
+import { QueryCacher } from "../utils/queryCacher";
+import { acquireLock } from "../utils/redisLock";
 
 export async function voteOnPortVideo(req: Request, res: Response): Promise<Response> {
     const UUID = req.body.UUID as portVideoUUID;
