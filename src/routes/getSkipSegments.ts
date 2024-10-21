@@ -32,6 +32,7 @@ import { parseSkipSegments } from "../utils/parseSkipSegments";
 import { getEtag } from "../middleware/etag";
 import { shuffleArray } from "../utils/array";
 import { Postgres } from "../databases/Postgres";
+import { getHash } from "../utils/getHash";
 
 async function prepareCategorySegments(
     req: Request,
@@ -507,7 +508,9 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
     }
 
     const { categories, actionTypes, requiredSegments, service } = parseResult;
-    const segments = await getSegmentsByVideoID(req, videoID, categories, actionTypes, requiredSegments, service);
+    const hashedVideoID = getHash(videoID, 1).substring(0, 4) as VideoIDHash;
+    const allSegments = await getSegmentsByHash(req, hashedVideoID, categories, actionTypes, requiredSegments, service);
+    const segments = allSegments[videoID]?.segments;
 
     if (segments === null || segments === undefined) {
         return res.sendStatus(500);
