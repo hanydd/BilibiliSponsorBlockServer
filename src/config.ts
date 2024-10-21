@@ -33,7 +33,6 @@ addDefaults(config, {
         poi_highlight: ["poi"],
         chapter: ["chapter"]
     },
-    deArrowTypes: ["title", "thumbnail"],
     maxTitleLength: 110,
     maxNumberOfActiveWarnings: 1,
     hoursAfterWarningExpires: 16300000,
@@ -44,7 +43,6 @@ addDefaults(config, {
     discordFailedReportChannelWebhookURL: null,
     discordReportChannelWebhookURL: null,
     discordMaliciousReportWebhookURL: null,
-    discordDeArrowLockedWebhookURL: null,
     minReputationToSubmitChapter: 0,
     minReputationToSubmitFiller: 0,
     getTopUsersCacheTimeMinutes: 240,
@@ -177,7 +175,6 @@ addDefaults(config, {
     },
     tokenSeed: "",
     minUserIDLength: 30,
-    deArrowPaywall: false,
     useCacheForSegmentGroups: false,
     maxConnections: 100,
     maxResponseTime: 1000,

@@ -126,15 +126,6 @@ async function getPermissions(userID: HashedUserID): Promise<Record<string, bool
     return result;
 }
 
-async function getTitleSubmissionCount(userID: HashedUserID): Promise<number> {
-    try {
-        const row = await db.prepare("get", `SELECT COUNT(*) as "titleSubmissionCount" FROM "titles" JOIN "titleVotes" ON "titles"."UUID" = "titleVotes"."UUID" WHERE "titles"."userID" = ? AND "titleVotes"."votes" >= 0`, [userID], { useReplica: true });
-        return row?.titleSubmissionCount ?? 0;
-    } catch (err) /* istanbul ignore next */ {
-        return null;
-    }
-}
-
 type cases = Record<string, any>
 
 const executeIfFunction = (f: any) =>
@@ -162,7 +153,6 @@ const dbGetValue = (userID: HashedUserID, property: string): Promise<string|Segm
         lastSegmentID: () => dbGetLastSegmentForUser(userID),
         permissions: () => getPermissions(userID),
         freeChaptersAccess: () => true,
-        titleSubmissionCount: () => getTitleSubmissionCount(userID),
     })("")(property);
 };
 

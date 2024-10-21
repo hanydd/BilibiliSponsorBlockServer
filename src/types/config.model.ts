@@ -1,6 +1,5 @@
 import { PoolConfig } from "pg";
 import * as redis from "redis";
-import { DeArrowType } from "./segments.model";
 
 interface RedisConfig extends redis.RedisClientOptions {
     enabled: boolean;
@@ -24,8 +23,8 @@ interface RedisReadOnlyConfig extends redis.RedisClientOptions {
 export interface CustomPostgresConfig extends PoolConfig {
     enabled: boolean;
     maxTries: number;
-    db: string,
-    privateDB: string,
+    db: string;
+    privateDB: string;
 }
 
 export interface CustomWritePostgresConfig extends CustomPostgresConfig {
@@ -43,7 +42,7 @@ export interface CustomPostgresReadOnlyConfig extends CustomPostgresConfig {
 }
 
 export interface SBSConfig {
-    [index: string]: any
+    [index: string]: any;
     port: number;
     mockPort?: number;
     globalSalt: string;
@@ -55,7 +54,6 @@ export interface SBSConfig {
     discordFirstTimeSubmissionsWebhookURL?: string;
     discordCompletelyIncorrectReportWebhookURL?: string;
     discordMaliciousReportWebhookURL?: string;
-    discordDeArrowLockedWebhookURL?: string,
     neuralBlockURL?: string;
     discordNeuralBlockRejectWebhookURL?: string;
     minReputationToSubmitChapter: number;
@@ -74,7 +72,6 @@ export interface SBSConfig {
     readOnly: boolean;
     webhooks: WebhookConfig[];
     categoryList: string[];
-    deArrowTypes: DeArrowType[];
     categorySupport: Record<string, string[]>;
     maxTitleLength: number;
     getTopUsersCacheTimeMinutes: number;
@@ -97,18 +94,17 @@ export interface SBSConfig {
     diskCacheURL: string;
     crons: CronJobOptions;
     patreon: {
-        clientId: string,
-        clientSecret: string,
-        minPrice: number,
-        redirectUri: string
-    }
+        clientId: string;
+        clientSecret: string;
+        minPrice: number;
+        redirectUri: string;
+    };
     gumroad: {
-        productPermalinks: string[],
-    },
-    tokenSeed: string,
-    minUserIDLength: number,
-    deArrowPaywall: boolean,
-    useCacheForSegmentGroups: boolean
+        productPermalinks: string[];
+    };
+    tokenSeed: string;
+    minUserIDLength: number;
+    useCacheForSegmentGroups: boolean;
     maxConnections: number;
     maxResponseTime: number;
     maxResponseTimeWhileLoadingCache: number;
