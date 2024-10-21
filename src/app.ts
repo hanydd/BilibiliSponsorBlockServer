@@ -15,7 +15,6 @@ import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
 import { addUserAsVIP } from "./routes/addUserAsVIP";
 import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
 import { generateTokenRequest } from "./routes/generateToken";
-import { getBranding, getBrandingByHashEndpoint } from "./routes/getBranding";
 import { getChapterNames } from "./routes/getChapterNames";
 import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
 import { getFeatureFlag } from "./routes/getFeatureFlag";
@@ -41,7 +40,6 @@ import { getUserStats } from "./routes/getUserStats";
 import { endpoint as getVideoLabels } from "./routes/getVideoLabel";
 import { getVideoLabelsByHash } from "./routes/getVideoLabelByHash";
 import { getViewsForUser } from "./routes/getViewsForUser";
-import { postBranding } from "./routes/postBranding";
 import { postClearCache } from "./routes/postClearCache";
 import { postLockCategories } from "./routes/postLockCategories";
 import { postPortVideo } from "./routes/postPortVideo";
@@ -213,10 +211,6 @@ function setupRoutes(router: Router, server: Server) {
     // labels
     router.get("/api/videoLabels", getVideoLabels);
     router.get("/api/videoLabels/:prefix", getVideoLabelsByHash);
-
-    router.get("/api/branding", getBranding);
-    router.get("/api/branding/:prefix", getBrandingByHashEndpoint);
-    router.post("/api/branding", postBranding);
 
     // port videos
     router.get("/api/portVideo", getPortVideo);

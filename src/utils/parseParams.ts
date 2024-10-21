@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { ActionType, SegmentUUID, Category, DeArrowType } from "../types/segments.model";
+import { ActionType, SegmentUUID, Category } from "../types/segments.model";
 import { config } from "../config";
 
 type fn = (req: Request, fallback: any) => any[];
@@ -22,9 +22,6 @@ const getQueryList = <T>(req: Request, fallback: T[], param: string, paramPlural
 
 const getCategories = (req: Request, fallback: Category[] ): string[] | Category[] =>
     getQueryList(req, fallback, "category", "categories");
-
-const getDeArrowTypes = (req: Request, fallback: DeArrowType[] ): string[] | DeArrowType[] =>
-    getQueryList(req, fallback, "deArrowType", "deArrowTypes");
 
 const validateString = (array: any[]): any[] => {
     if (!Array.isArray(array)) return undefined;
@@ -75,11 +72,6 @@ export const parseCategories = (req: Request, fallback: Category[]): Category[] 
 export const parseActionTypes = (req: Request, fallback: ActionType[]): ActionType[] => {
     const actionTypes = syntaxErrorWrapper(getActionTypes, req, fallback);
     return actionTypes ? validateString(actionTypes) : undefined;
-};
-
-export const parseDeArrowTypes = (req: Request, fallback: DeArrowType[]): DeArrowType[] => {
-    const deArrowTypes = syntaxErrorWrapper(getDeArrowTypes, req, fallback);
-    return deArrowTypes ? validateString(deArrowTypes) : undefined;
 };
 
 export const parseRequiredSegments = (req: Request): SegmentUUID[] | undefined =>

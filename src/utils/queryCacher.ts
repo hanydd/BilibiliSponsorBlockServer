@@ -5,8 +5,6 @@ import { Logger } from "../utils/logger";
 import redis, { TooManyActiveConnectionsError } from "../utils/redis";
 import { getHash } from "./getHash";
 import {
-    brandingHashKey,
-    brandingKey,
     portVideoByHashCacheKey,
     portVideoCacheKey,
     ratingHashKey,
@@ -165,20 +163,12 @@ function clearSegmentCache(videoInfo: {
         redis.del(videoLabelsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         if (videoInfo.userID) redis.del(reputationKey(videoInfo.userID)).catch((err) => Logger.error(err));
 
-        clearBrandingCache(videoInfo);
     }
 }
 
 function clearSegmentCacheByID(videoID: VideoID): void {
     if (videoID) {
         clearSegmentCache({ videoID: videoID, hashedVideoID: getHash(videoID, 1), service: Service.YouTube });
-    }
-}
-
-function clearBrandingCache(videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service }): void {
-    if (videoInfo) {
-        redis.del(brandingHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
-        redis.del(brandingKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
     }
 }
 
@@ -232,7 +222,6 @@ export const QueryCacher = {
     clearKey,
     clearSegmentCache,
     clearSegmentCacheByID,
-    clearBrandingCache,
     getKeyLastModified,
     clearRatingCache,
     clearFeatureCache,

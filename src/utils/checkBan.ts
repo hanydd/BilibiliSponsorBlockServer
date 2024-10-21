@@ -19,7 +19,7 @@ export async function checkBanStatus(userID: HashedUserID, ip: HashedIP): Promis
 
     if (!userBanStatus && ipBanStatus) {
         // Make sure the whole user is banned
-        banUser(userID, true, true, 1, config.categoryList as Category[], config.deArrowTypes)
+        banUser(userID, true, true, 1, config.categoryList as Category[])
             .catch((e) => Logger.error(`Error banning user after submitting from a banned IP: ${e}`));
     }
     return userBanStatus || ipBanStatus;

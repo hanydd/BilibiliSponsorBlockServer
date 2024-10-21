@@ -2,7 +2,6 @@ import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { Feature, HashedUserID, UserID } from "../types/user.model";
 import { HashedValue } from "../types/hash.model";
 import { Logger } from "./logger";
-import { BrandingUUID } from "../types/branding.model";
 import { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 
 export const skipSegmentsKey = (videoID: VideoID, service: Service): string =>
@@ -17,20 +16,6 @@ export function skipSegmentsHashKey(hashedVideoIDPrefix: VideoIDHash, service: S
 
     return `segments.v4.${service}.${hashedVideoIDPrefix}`;
 }
-
-export const brandingKey = (videoID: VideoID, service: Service): string =>
-    `branding.v2.${service}.videoID.${videoID}`;
-
-export function brandingHashKey(hashedVideoIDPrefix: VideoIDHash, service: Service): string {
-    hashedVideoIDPrefix = hashedVideoIDPrefix.substring(0, 4) as VideoIDHash;
-    if (hashedVideoIDPrefix.length !== 4) Logger.warn(`Redis skip segment hash-prefix key is not length 4! ${hashedVideoIDPrefix}`);
-
-    return `branding.v2.${service}.${hashedVideoIDPrefix}`;
-}
-
-export const brandingIPKey = (uuid: BrandingUUID): string =>
-    `branding.v1.shadow.${uuid}`;
-
 
 export const shadowHiddenIPKey = (videoID: VideoID, timeSubmitted: number, service: Service): string =>
     `segments.v1.${service}.videoID.${videoID}.shadow.${timeSubmitted}`;

@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { VideoID, VideoIDHash, Service } from "../types/segments.model";
 import { QueryCacher } from "../utils/queryCacher";
-import { brandingHashKey, brandingKey, skipSegmentsHashKey, skipSegmentsKey, videoLabelsHashKey, videoLabelsKey } from "../utils/redisKeys";
+import { skipSegmentsHashKey, skipSegmentsKey, videoLabelsHashKey, videoLabelsKey } from "../utils/redisKeys";
 
 type hashType = "skipSegments" | "skipSegmentsHash" | "videoLabel" | "videoLabelHash" | "branding" | "brandingHash";
 type ETag = `"${hashType};${VideoIDHash};${Service};${number}"`;
@@ -32,8 +32,6 @@ function getLastModified(hashType: hashType, hashKey: hashKey, service: Service)
     else if (hashType === "skipSegmentsHash") redisKey = skipSegmentsHashKey(hashKey as VideoIDHash, service);
     else if (hashType === "videoLabel") redisKey = videoLabelsKey(hashKey as VideoID, service);
     else if (hashType === "videoLabelHash") redisKey = videoLabelsHashKey(hashKey as VideoIDHash, service);
-    else if (hashType === "branding") redisKey = brandingKey(hashKey as VideoID, service);
-    else if (hashType === "brandingHash") redisKey = brandingHashKey(hashKey as VideoIDHash, service);
     else return Promise.reject();
     return QueryCacher.getKeyLastModified(redisKey);
 }

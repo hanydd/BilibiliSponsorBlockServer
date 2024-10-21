@@ -2,11 +2,11 @@ import { db } from "../databases/databases";
 import { getHashCache } from "../utils/getHashCache";
 import { Request, Response } from "express";
 import { config } from "../config";
-import { Category, DeArrowType, Service, VideoID, VideoIDHash } from "../types/segments.model";
+import { Category, Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { UserID } from "../types/user.model";
 import { QueryCacher } from "../utils/queryCacher";
 import { isUserVIP } from "../utils/isUserVIP";
-import { parseCategories, parseDeArrowTypes } from "../utils/parseParams";
+import { parseCategories } from "../utils/parseParams";
 import { Logger } from "../utils/logger";
 
 export async function shadowBanUser(req: Request, res: Response): Promise<Response> {
@@ -25,7 +25,6 @@ export async function shadowBanUser(req: Request, res: Response): Promise<Respon
     const unHideOldSubmissions = req.query.unHideOldSubmissions !== "false";
 
     const categories: Category[] = parseCategories(req, config.categoryList as Category[]);
-    const deArrowTypes: DeArrowType[] = parseDeArrowTypes(req, config.deArrowTypes);
 
     if (adminUserIDInput == undefined || (userID == undefined || type <= 0)) {
         //invalid request
@@ -41,7 +40,7 @@ export async function shadowBanUser(req: Request, res: Response): Promise<Respon
             //not authorized
             return res.sendStatus(403);
         }
-        const result = await banUser(userID, enabled, unHideOldSubmissions, type, categories, deArrowTypes);
+        const result = await banUser(userID, enabled, unHideOldSubmissions, type, categories);
         if (result) {
             res.sendStatus(result);
             return;
@@ -54,7 +53,7 @@ export async function shadowBanUser(req: Request, res: Response): Promise<Respon
 }
 
 export async function banUser(userID: UserID, enabled: boolean, unHideOldSubmissions: boolean,
-    type: number, categories: Category[], deArrowTypes: DeArrowType[]): Promise<number> {
+    type: number, categories: Category[]): Promise<number> {
     //check to see if this user is already shadowbanned
     const row = await db.prepare("get", `SELECT count(*) as "userCount" FROM "shadowBannedUsers" WHERE "userID" = ?`, [userID]);
 
@@ -66,12 +65,12 @@ export async function banUser(userID: UserID, enabled: boolean, unHideOldSubmiss
 
         //find all previous submissions and hide them
         if (unHideOldSubmissions) {
-            await unHideSubmissionsByUser(categories, deArrowTypes, userID, type);
+            await unHideSubmissionsByUser(categories, userID, type);
         }
     } else if (enabled && row.userCount > 0) {
         // apply unHideOldSubmissions if applicable
         if (unHideOldSubmissions) {
-            await unHideSubmissionsByUser(categories, deArrowTypes, userID, type);
+            await unHideSubmissionsByUser(categories, userID, type);
         } else {
             // otherwise ban already exists, send 409
             return 409;
@@ -79,7 +78,7 @@ export async function banUser(userID: UserID, enabled: boolean, unHideOldSubmiss
     } else if (!enabled && row.userCount > 0) {
         //find all previous submissions and unhide them
         if (unHideOldSubmissions) {
-            await unHideSubmissionsByUser(categories, deArrowTypes, userID, 0);
+            await unHideSubmissionsByUser(categories, userID, 0);
         }
 
         //remove them from the shadow ban list
@@ -91,8 +90,7 @@ export async function banUser(userID: UserID, enabled: boolean, unHideOldSubmiss
     return 200;
 }
 
-async function unHideSubmissionsByUser(categories: string[], deArrowTypes: DeArrowType[],
-    userID: UserID, type = 1) {
+async function unHideSubmissionsByUser(categories: string[], userID: UserID, type = 1) {
 
     if (categories.length) {
         await db.prepare("run", `UPDATE "sponsorTimes" SET "shadowHidden" = '${type}' WHERE "userID" = ? AND "category" in (${categories.map((c) => `'${c}'`).join(",")})
@@ -104,24 +102,5 @@ async function unHideSubmissionsByUser(categories: string[], deArrowTypes: DeArr
     (await db.prepare("all", `SELECT "category", "videoID", "hashedVideoID", "service", "userID" FROM "sponsorTimes" WHERE "userID" = ?`, [userID]))
         .forEach((videoInfo: { category: Category; videoID: VideoID; hashedVideoID: VideoIDHash; service: Service; userID: UserID; }) => {
             QueryCacher.clearSegmentCache(videoInfo);
-        });
-
-    if (deArrowTypes.includes("title")) {
-        await db.prepare("run", `UPDATE "titleVotes" as tv SET "shadowHidden" = ${type} FROM "titles" t WHERE tv."UUID" = t."UUID" AND t."userID" = ?`,
-            [userID]);
-    }
-
-    if (deArrowTypes.includes("thumbnail")) {
-        await db.prepare("run", `UPDATE "thumbnailVotes" as tv SET "shadowHidden" = ${type} FROM "thumbnails" t WHERE tv."UUID" = t."UUID" AND t."userID" = ?`,
-            [userID]);
-    }
-
-    (await db.prepare("all", `SELECT "videoID", "hashedVideoID", "service" FROM "titles" WHERE "userID" = ?`, [userID]))
-        .forEach((videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service; }) => {
-            QueryCacher.clearBrandingCache(videoInfo);
-        });
-    (await db.prepare("all", `SELECT "videoID", "hashedVideoID", "service" FROM "thumbnails" WHERE "userID" = ?`, [userID]))
-        .forEach((videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service; }) => {
-            QueryCacher.clearBrandingCache(videoInfo);
         });
 }

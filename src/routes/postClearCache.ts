@@ -44,11 +44,6 @@ export async function postClearCache(req: Request, res: Response): Promise<Respo
             hashedVideoID,
             service
         });
-        QueryCacher.clearBrandingCache({
-            videoID,
-            hashedVideoID,
-            service
-        });
         return res.status(200).json({
             message: `Cache cleared on video ${videoID}`
         });

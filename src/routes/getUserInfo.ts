@@ -135,15 +135,6 @@ async function getTitleSubmissionCount(userID: HashedUserID): Promise<number> {
     }
 }
 
-async function getThumbnailSubmissionCount(userID: HashedUserID): Promise<number> {
-    try {
-        const row = await db.prepare("get", `SELECT COUNT(*) as "thumbnailSubmissionCount" FROM "thumbnails" JOIN "thumbnailVotes" ON "thumbnails"."UUID" = "thumbnailVotes"."UUID" WHERE "thumbnails"."userID" = ? AND "thumbnailVotes"."votes" >= 0`, [userID], { useReplica: true });
-        return row?.thumbnailSubmissionCount ?? 0;
-    } catch (err) /* istanbul ignore next */ {
-        return null;
-    }
-}
-
 type cases = Record<string, any>
 
 const executeIfFunction = (f: any) =>
@@ -172,7 +163,6 @@ const dbGetValue = (userID: HashedUserID, property: string): Promise<string|Segm
         permissions: () => getPermissions(userID),
         freeChaptersAccess: () => true,
         titleSubmissionCount: () => getTitleSubmissionCount(userID),
-        thumbnailSubmissionCount: () => getThumbnailSubmissionCount(userID),
     })("")(property);
 };
 

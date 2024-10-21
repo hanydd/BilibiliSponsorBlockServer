@@ -133,24 +133,6 @@ addDefaults(config, {
         },
         {
             name: "videoInfo"
-        },
-        {
-            name: "ratings"
-        },
-        {
-            name: "titles"
-        },
-        {
-            name: "titleVotes"
-        },
-        {
-            name: "thumbnails"
-        },
-        {
-            name: "thumbnailTimestamps"
-        },
-        {
-            name: "thumbnailVotes"
         }]
     },
     diskCacheURL: null,
