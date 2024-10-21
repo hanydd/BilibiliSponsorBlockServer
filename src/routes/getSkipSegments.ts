@@ -510,11 +510,13 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
     const { categories, actionTypes, requiredSegments, service } = parseResult;
     const hashedVideoID = getHash(videoID, 1).substring(0, 4) as VideoIDHash;
     const allSegments = await getSegmentsByHash(req, hashedVideoID, categories, actionTypes, requiredSegments, service);
-    const segments = allSegments[videoID]?.segments;
 
-    if (segments === null || segments === undefined) {
+    if (allSegments === null || allSegments === undefined) {
         return res.sendStatus(500);
-    } else if (segments.length === 0) {
+    }
+
+    const segments = allSegments[videoID]?.segments;
+    if (!segments || segments.length === 0) {
         return res.sendStatus(404);
     }
 
