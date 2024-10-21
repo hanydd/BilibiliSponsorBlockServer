@@ -1,14 +1,14 @@
 # SponsorTimesDB
 
-[vipUsers](#vipUsers)  
-[sponsorTimes](#sponsorTimes)  
-[userNames](#userNames)  
-[categoryVotes](#categoryVotes)  
-[lockCategories](#lockCategories)  
-[warnings](#warnings)  
-[shadowBannedUsers](#shadowBannedUsers)  
-[unlistedVideos](#unlistedVideos)  
-[config](#config)  
+[vipUsers](#vipUsers)
+[sponsorTimes](#sponsorTimes)
+[userNames](#userNames)
+[categoryVotes](#categoryVotes)
+[lockCategories](#lockCategories)
+[warnings](#warnings)
+[shadowBannedUsers](#shadowBannedUsers)
+[unlistedVideos](#unlistedVideos)
+[config](#config)
 [archivedSponsorTimes](#archivedSponsorTimes)
 
 ### vipUsers
@@ -20,7 +20,7 @@
 | -- | :--: |
 | vipUsers_index | userID |
 
-### sponsorTimes  
+### sponsorTimes
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -77,7 +77,7 @@
 | -- | :--: |
 | categoryVotes_UUID_public | UUID, category |
 
-### lockCategories  
+### lockCategories
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -93,7 +93,7 @@
 | -- | :--: |
 | lockCategories_videoID | videoID, service, category |
 
-### warnings  
+### warnings
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -108,7 +108,7 @@
 | warnings_index | userID |
 | warnings_issueTime | issueTime |
 
-### shadowBannedUsers  
+### shadowBannedUsers
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -118,7 +118,7 @@
 | -- | :--: |
 | shadowBannedUsers_index | userID |
 
-### videoInfo  
+### videoInfo
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -132,7 +132,7 @@
 | videoInfo_videoID | timeSubmitted |
 | videoInfo_channelID | userID |
 
-### unlistedVideos  
+### unlistedVideos
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -174,31 +174,15 @@
 | hashedVideoID | TEXT | not null, default '', sha256 |
 | userAgent | TEXT | not null, default '' |
 
-### ratings  
+# Private
 
-| Name | Type | |
-| -- | :--: | -- |
-| videoID | TEXT | not null |
-| service | TEXT | not null, default 'YouTube' |
-| type | INTEGER | not null |
-| count | INTEGER | not null |
-| hashedVideoID | TEXT | not null |
-
-| index | field |
-| -- | :--: |
-| ratings_hashedVideoID_gin | hashedVideoID |
-| ratings_hashedVideoID | hashedVideoID, service |
-| ratings_videoID | videoID, service |
-
-# Private 
-
-[votes](#votes)  
-[categoryVotes](#categoryVotes)  
-[sponsorTimes](#sponsorTimes)  
-[config](#config)  
-[ratings](#ratings)  
-[tempVipLog](#tempVipLog)  
-[userNameLogs](#userNameLogs)  
+[votes](#votes)
+[categoryVotes](#categoryVotes)
+[sponsorTimes](#sponsorTimes)
+[config](#config)
+[ratings](#ratings)
+[tempVipLog](#tempVipLog)
+[userNameLogs](#userNameLogs)
 
 ### votes
 
@@ -228,7 +212,7 @@
 | -- | :--: |
 | categoryVotes_UUID | UUID, userID, hasedIP, category |
 
-### sponsorTimes  
+### sponsorTimes
 
 | Name | Type | |
 | -- | :--: | -- |
@@ -242,27 +226,12 @@
 | sponsorTimes_hashedIP | hashedIP |
 | privateDB_sponsorTimes_videoID_v2 | videoID, service |
 
-### config  
+### config
 
 | Name | Type | |
 | -- | :--: | -- |
 | key | TEXT | not null |
 | value | TEXT | not null |
-
-### ratings  
-
-| Name | Type | |
-| -- | :--: | -- |
-| videoID | TEXT | not null |
-| service | TEXT | not null, default 'YouTube' |
-| userID | TEXT | not null |
-| type | INTEGER | not null |
-| timeSubmitted | INTEGER | not null |
-| hashedIP | TEXT | not null |
-
-| index | field |
-| -- | :--: |
-| ratings_videoID | videoID, service, userID, timeSubmitted |
 
 ### tempVipLog
 | Name | Type | |
