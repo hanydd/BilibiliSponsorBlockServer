@@ -26,13 +26,16 @@ export function getVideoDetails(videoId: string, ignoreCache = false): Promise<v
     if (ignoreCache) {
         QueryCacher.clearKey(videoDetailCacheKey(videoId));
     }
+
     return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId));
-    function getVideoDetailsFromAPI(videoId: string): Promise<videoDetails> {
-        return BilibiliAPI.getVideoDetailView(videoId)
-            .then((data) => convertFromVideoViewAPI(videoId, data))
-            .catch((e) => {
-                Logger.error(e.message);
-                return null;
-            });
+
+    async function getVideoDetailsFromAPI(videoId: string): Promise<videoDetails> {
+        try {
+            const data = await BilibiliAPI.getVideoDetailView(videoId);
+            return convertFromVideoViewAPI(videoId, data);
+        } catch (e: any) {
+            Logger.error(e.message);
+            return null;
+        }
     }
 }

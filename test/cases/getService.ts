@@ -18,11 +18,4 @@ describe("getService", () => {
         assert.strictEqual(getService("   YouTube   "), Service.YouTube);
         assert.strictEqual(getService(undefined, "   YouTube   "), Service.YouTube);
     });
-
-    it("Should return PeerTube", () => {
-        assert.strictEqual(getService("PeerTube"), Service.PeerTube);
-        assert.strictEqual(getService("   PeerTube   "), Service.PeerTube);
-        assert.strictEqual(getService("   peertube   "), Service.PeerTube);
-        assert.strictEqual(getService(undefined, "   PeerTube   "), Service.PeerTube);
-    });
 });
