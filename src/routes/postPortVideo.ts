@@ -7,7 +7,7 @@ import { config } from "../config";
 import * as youtubeID from "../utils/youtubeID";
 import * as biliID from "../utils/bilibiliID";
 import { getVideoDetails } from "../utils/getVideoDetails";
-import { parseUserAgent } from "../utils/userAgent";
+import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { getMatchVideoUUID, getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
@@ -175,7 +175,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // prepare to be saved
     const isVIP = await isUserVIP(userID);
-    const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgent(req.get("user-agent")) ?? "";
+    const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgentFromHeaders(req.headers) ?? "";
     const timeSubmitted = Date.now();
     const matchVideoUUID = getMatchVideoUUID(bvID, ytbID, userID, paramBiliDuration, ytbDuration, timeSubmitted);
     const startingVotes = 0;

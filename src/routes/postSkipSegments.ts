@@ -16,7 +16,7 @@ import { getReputation } from "../utils/reputation";
 import { HashedUserID, UserID } from "../types/user.model";
 import { isUserVIP } from "../utils/isUserVIP";
 import { isUserTempVIP } from "../utils/isUserTempVIP";
-import { parseUserAgent } from "../utils/userAgent";
+import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { getService } from "../utils/getService";
 import axios from "axios";
 import { vote } from "./voteOnSponsorTime";
@@ -485,7 +485,7 @@ function preprocessInput(req: Request) {
         segment.segment = segment.segment.map((time) => typeof segment.segment[0] === "string" ? time?.replace(",", ".") : time);
     });
 
-    const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgent(req.get("user-agent")) ?? "";
+    const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgentFromHeaders(req.headers) ?? "";
 
     return { videoID, userID, service, videoDuration, videoDurationParam, segments, userAgent };
 }

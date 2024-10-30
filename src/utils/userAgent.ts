@@ -1,13 +1,8 @@
-export function parseUserAgent(userAgent: string): string {
-    const ua = userAgent.toLowerCase();
+import { IncomingHttpHeaders } from "http";
 
-    if (ua.match(/(com.google.android.youtube\/)|(com.vanced.android.youtube\/)|(^YouTube\/)|(^Dalvik\/)/)) {
-        return `Vanced/${ua.match(/.android.youtube\/([^\s]+)/)[1]}`;
+export function parseUserAgentFromHeaders(headers: IncomingHttpHeaders): string {
+    if (!headers.origin) {
+        return "";
     }
-
-    if (ua.match(/(mpv_sponsorblock\/)|(^python-requests)|(^GuzzleHttp\/)|(^PostmanRuntime\/)/)) {
-        return ua;
-    }
-
-    return "";
+    return headers.origin.split("://").at(-1) + (headers["x-ext-version"] ? `/${headers["x-ext-version"]}` : "");
 }
