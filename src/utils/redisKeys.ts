@@ -5,16 +5,16 @@ import { Logger } from "./logger";
 import { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 
 export const skipSegmentsKey = (videoID: VideoID, service: Service): string =>
-    `segments.v4.${service}.videoID.${videoID}`;
+    `segments.v5.${service}.videoID.${videoID}`;
 
 export const skipSegmentGroupsKey = (videoID: VideoID, service: Service): string =>
-    `segments.groups.v3.${service}.videoID.${videoID}`;
+    `segments.groups.v4.${service}.videoID.${videoID}`;
 
 export function skipSegmentsHashKey(hashedVideoIDPrefix: VideoIDHash, service: Service): string {
     hashedVideoIDPrefix = hashedVideoIDPrefix.substring(0, 4) as VideoIDHash;
     if (hashedVideoIDPrefix.length !== 4) Logger.warn(`Redis skip segment hash-prefix key is not length 4! ${hashedVideoIDPrefix}`);
 
-    return `segments.v4.${service}.${hashedVideoIDPrefix}`;
+    return `segments.v5.${service}.${hashedVideoIDPrefix}`;
 }
 
 export const shadowHiddenIPKey = (videoID: VideoID, timeSubmitted: number, service: Service): string =>

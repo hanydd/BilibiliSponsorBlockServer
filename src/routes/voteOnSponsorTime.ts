@@ -84,8 +84,8 @@ async function checkVideoDuration(UUID: SegmentUUID) {
     // fetch latest submission
     const latestSubmission = await db.prepare("get", `SELECT "videoDuration", "UUID", "timeSubmitted"
         FROM "sponsorTimes"
-        WHERE "videoID" = ? AND "service" = ? AND 
-            "hidden" = 0 AND "shadowHidden" = 0 AND 
+        WHERE "videoID" = ? AND "service" = ? AND
+            "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND
             "votes" > -2 AND "videoDuration" != 0
         ORDER BY "timeSubmitted" DESC LIMIT 1`,
@@ -95,7 +95,7 @@ async function checkVideoDuration(UUID: SegmentUUID) {
         Logger.info(`Video duration changed for ${videoID} from ${latestSubmission.videoDuration} to ${apiVideoDuration}`);
         await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = 1
             WHERE "videoID" = ? AND "service" = ? AND "timeSubmitted" <= ?
-            AND "hidden" = 0 AND "shadowHidden" = 0 AND 
+            AND "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND "votes" > -2`,
         [videoID, service, latestSubmission.timeSubmitted]);
         deleteLockCategories(videoID, null, null, service).catch((e) => Logger.error(`delete lock categories after vote: ${e}`));

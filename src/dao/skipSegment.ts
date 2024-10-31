@@ -24,13 +24,13 @@ export async function getSegmentsFromDBByHash(
     const fetchFromDB = () =>
         db.prepare(
             "all",
-            `SELECT "videoID", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
+            `SELECT "videoID", "cid", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
             WHERE "hashedVideoID" LIKE ? AND "service" = ? ORDER BY "startTime"`,
             [`${hashedVideoIDPrefix}%`, service],
             { useReplica: true }
         ) as Promise<DBSegment[]>;
 
-    if (hashedVideoIDPrefix.length === 4) {
+    if (hashedVideoIDPrefix.length >= 4) {
         return await QueryCacher.get(fetchFromDB, skipSegmentsHashKey(hashedVideoIDPrefix, service));
     }
 
@@ -41,7 +41,7 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
     const fetchFromDB = () =>
         db.prepare(
             "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
+            `SELECT "cid", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
             WHERE "videoID" = ? AND "service" = ? ORDER BY "startTime"`,
             [videoID, service],
             { useReplica: true }

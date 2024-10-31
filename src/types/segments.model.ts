@@ -47,6 +47,7 @@ export interface IncomingSegment {
 }
 
 export interface Segment {
+    cid?: string;
     category: Category;
     actionType: ActionType;
     segment: number[];
@@ -65,6 +66,7 @@ export enum Visibility {
 
 export interface DBSegment {
     videoID: VideoID;
+    cid: string;
     startTime: number;
     endTime: number;
 

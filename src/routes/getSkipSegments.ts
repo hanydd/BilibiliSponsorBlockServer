@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
 import { partition } from "lodash";
 import { config } from "../config";
+import { getSegmentsFromDBByHash, getSegmentsFromDBByVideoID } from "../dao/skipSegment";
 import { db, privateDB } from "../databases/databases";
-import { skipSegmentsHashKey, skipSegmentsKey, skipSegmentGroupsKey, shadowHiddenIPKey } from "../utils/redisKeys";
+import { Postgres } from "../databases/Postgres";
+import { getEtag } from "../middleware/etag";
 import { SBRecord } from "../types/lib.model";
 import {
     ActionType,
@@ -21,18 +23,17 @@ import {
     Visibility,
     VotableObject,
 } from "../types/segments.model";
+import { shuffleArray } from "../utils/array";
+import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
-import { Logger } from "../utils/logger";
-import { QueryCacher } from "../utils/queryCacher";
-import { getReputation } from "../utils/reputation";
 import { getService } from "../utils/getService";
-import { promiseOrTimeout } from "../utils/promise";
+import { Logger } from "../utils/logger";
 import { parseSkipSegments } from "../utils/parseSkipSegments";
-import { getEtag } from "../middleware/etag";
-import { shuffleArray } from "../utils/array";
-import { Postgres } from "../databases/Postgres";
-import { getHash } from "../utils/getHash";
+import { promiseOrTimeout } from "../utils/promise";
+import { QueryCacher } from "../utils/queryCacher";
+import { shadowHiddenIPKey, skipSegmentGroupsKey } from "../utils/redisKeys";
+import { getReputation } from "../utils/reputation";
 
 async function prepareCategorySegments(
     req: Request,
@@ -275,36 +276,6 @@ async function getSegmentsByHash(
     }
 }
 
-async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () =>
-        db.prepare(
-            "all",
-            `SELECT "videoID", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description" FROM "sponsorTimes"
-            WHERE "hashedVideoID" LIKE ? AND "service" = ? ORDER BY "startTime"`,
-            [`${hashedVideoIDPrefix}%`, service],
-            { useReplica: true }
-        ) as Promise<DBSegment[]>;
-
-    if (hashedVideoIDPrefix.length === 4) {
-        return await QueryCacher.get(fetchFromDB, skipSegmentsHashKey(hashedVideoIDPrefix, service));
-    }
-
-    return await fetchFromDB();
-}
-
-async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () =>
-        db.prepare(
-            "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description" FROM "sponsorTimes"
-            WHERE "videoID" = ? AND "service" = ? ORDER BY "startTime"`,
-            [videoID, service],
-            { useReplica: true }
-        ) as Promise<DBSegment[]>;
-
-    return await QueryCacher.get(fetchFromDB, skipSegmentsKey(videoID, service));
-}
-
 // Gets the best choice from the choices array based on their `votes` property.
 // amountOfChoices specifies the maximum amount of choices to return, 1 or more.
 // Choices are unique
@@ -533,4 +504,4 @@ const filterRequiredSegments = (UUID: SegmentUUID, requiredSegments: SegmentUUID
     return false;
 };
 
-export { getSegmentsByVideoID, getSegmentsByHash, getSkipSegments };
+export { getSegmentsByHash, getSegmentsByVideoID, getSkipSegments };
