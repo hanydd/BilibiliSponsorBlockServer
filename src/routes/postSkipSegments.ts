@@ -1,30 +1,27 @@
+import axios from "axios";
+import { Request, Response } from "express";
 import { config } from "../config";
-import { Logger } from "../utils/logger";
 import { db, privateDB } from "../databases/databases";
-import { getMaxResThumbnail } from "../utils/youtubeApi";
-import { getSubmissionUUID } from "../utils/getSubmissionUUID";
+import { ActionType, Category, HashedIP, IncomingSegment, IPAddress, SegmentUUID, Service, VideoDuration, VideoID } from "../types/segments.model";
+import { HashedUserID, UserID } from "../types/user.model";
+import * as biliID from "../utils/bilibiliID";
+import { checkBanStatus } from "../utils/checkBan";
 import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
-import { getFormattedTime } from "../utils/getFormattedTime";
-import { dispatchEvent } from "../utils/webhookUtils";
-import { Request, Response } from "express";
-import { ActionType, Category, HashedIP, IncomingSegment, IPAddress, SegmentUUID, Service, VideoDuration, VideoID } from "../types/segments.model";
-import { deleteLockCategories } from "./deleteLockCategories";
-import { QueryCacher } from "../utils/queryCacher";
-import { getReputation } from "../utils/reputation";
-import { HashedUserID, UserID } from "../types/user.model";
-import { isUserVIP } from "../utils/isUserVIP";
-import { isUserTempVIP } from "../utils/isUserTempVIP";
-import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { getService } from "../utils/getService";
-import axios from "axios";
-import { vote } from "./voteOnSponsorTime";
-import { canSubmit } from "../utils/permissions";
+import { getSubmissionUUID } from "../utils/getSubmissionUUID";
 import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
-import * as biliID from "../utils/bilibiliID";
+import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { isUserVIP } from "../utils/isUserVIP";
+import { Logger } from "../utils/logger";
+import { canSubmit } from "../utils/permissions";
+import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../utils/redisLock";
-import { checkBanStatus } from "../utils/checkBan";
+import { getReputation } from "../utils/reputation";
+import { parseUserAgentFromHeaders } from "../utils/userAgent";
+import { deleteLockCategories } from "./deleteLockCategories";
+import { vote } from "./voteOnSponsorTime";
 
 type CheckResult = {
     pass: boolean,
@@ -38,81 +35,6 @@ const CHECK_PASS: CheckResult = {
     errorCode: 0
 };
 
-async function sendWebhookNotification(userID: string, videoID: string, UUID: string, submissionCount: number, youtubeData: videoDetails, { submissionStart, submissionEnd }: { submissionStart: number; submissionEnd: number; }, segmentInfo: any) {
-    const row = await db.prepare("get", `SELECT "userName" FROM "userNames" WHERE "userID" = ?`, [userID]);
-    const userName = row !== undefined ? row.userName : null;
-
-    let scopeName = "submissions.other";
-    if (submissionCount <= 1) {
-        scopeName = "submissions.new";
-    }
-
-    dispatchEvent(scopeName, {
-        "video": {
-            "id": videoID,
-            "title": youtubeData?.title,
-            "thumbnail": getMaxResThumbnail(videoID),
-            "url": `https://www.youtube.com/watch?v=${videoID}`,
-        },
-        "submission": {
-            "UUID": UUID,
-            "category": segmentInfo.category,
-            "startTime": submissionStart,
-            "endTime": submissionEnd,
-            "user": {
-                "UUID": userID,
-                "username": userName,
-            },
-        },
-    });
-}
-
-async function sendWebhooks(apiVideoDetails: videoDetails, userID: string, videoID: string, UUID: string, segmentInfo: any, service: Service) {
-    if (apiVideoDetails && service == Service.YouTube) {
-        const userSubmissionCountRow = await db.prepare("get", `SELECT count(*) as "submissionCount" FROM "sponsorTimes" WHERE "userID" = ?`, [userID]);
-
-        const startTime = parseFloat(segmentInfo.segment[0]);
-        const endTime = parseFloat(segmentInfo.segment[1]);
-        sendWebhookNotification(userID, videoID, UUID, userSubmissionCountRow.submissionCount, apiVideoDetails, {
-            submissionStart: startTime,
-            submissionEnd: endTime,
-        }, segmentInfo).catch((e) => Logger.error(`sending webhooks: ${e}`));
-
-        // If it is a first time submission
-        // Then send a notification to discord
-        if (config.discordFirstTimeSubmissionsWebhookURL === null || userSubmissionCountRow.submissionCount > 1) return;
-
-        axios.post(config.discordFirstTimeSubmissionsWebhookURL, {
-            embeds: [{
-                title: apiVideoDetails.title,
-                url: `https://www.youtube.com/watch?v=${videoID}&t=${(parseInt(startTime.toFixed(0)) - 2)}s#requiredSegment=${UUID}`,
-                description: `Submission ID: ${UUID}\
-                    \n\nTimestamp: \
-                    ${getFormattedTime(startTime)} to ${getFormattedTime(endTime)}\
-                    \n\nCategory: ${segmentInfo.category}`,
-                color: 10813440,
-                author: {
-                    name: userID,
-                },
-                thumbnail: {
-                    url: getMaxResThumbnail(videoID),
-                },
-            }],
-        })
-            .then(res => {
-                if (res.status >= 400) {
-                    Logger.error("Error sending first time submission Discord hook");
-                    Logger.error(JSON.stringify(res));
-                    Logger.error("\n");
-                }
-            })
-            .catch(err => {
-                Logger.error("Failed to send first time submission Discord hook.");
-                Logger.error(JSON.stringify(err));
-                Logger.error("\n");
-            });
-    }
-}
 
 // callback:  function(reject: "String containing reason the submission was rejected")
 // returns: string when an error, false otherwise
@@ -140,7 +62,7 @@ async function autoModerateSubmission(apiVideoDetails: videoDetails,
 
     if (allSubmittedByUser) {
         //add segments the user has previously submitted
-        const allSubmittedTimes = allSubmittedByUser.map((segment) => [parseFloat(segment.startTime),  parseFloat(segment.endTime)]);
+        const allSubmittedTimes = allSubmittedByUser.map((segment) => [parseFloat(segment.startTime), parseFloat(segment.endTime)]);
         allSegmentTimes.push(...allSubmittedTimes);
     }
 
@@ -405,49 +327,6 @@ async function updateDataIfVideoDurationChange(videoID: VideoID, service: Servic
     };
 }
 
-// Disable max submissions for now
-// Disable IP ratelimiting for now
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-async function checkRateLimit(userID:string, videoID: VideoID, service: Service, timeSubmitted: number, hashedIP: string, options: {
-    enableCheckByIP: boolean;
-    enableCheckByUserID: boolean;
-} = {
-    enableCheckByIP: false,
-    enableCheckByUserID: false
-}): Promise<CheckResult> {
-    const yesterday = timeSubmitted - 86400000;
-
-    if (options.enableCheckByIP) {
-        //check to see if this ip has submitted too many sponsors today
-        const rateLimitCheckRow = await privateDB.prepare("get", `SELECT COUNT(*) as count FROM "sponsorTimes" WHERE "hashedIP" = ? AND "videoID" = ? AND "timeSubmitted" > ? AND "service" = ?`, [hashedIP, videoID, yesterday, service]);
-
-        if (rateLimitCheckRow.count >= 10) {
-            //too many sponsors for the same video from the same ip address
-            return {
-                pass: false,
-                errorCode: 429,
-                errorMessage: "Have submited many sponsors for the same video."
-            };
-        }
-    }
-
-    if (options.enableCheckByUserID) {
-        //check to see if the user has already submitted sponsors for this video
-        const duplicateCheckRow = await db.prepare("get", `SELECT COUNT(*) as count FROM "sponsorTimes" WHERE "userID" = ? and "videoID" = ?`, [userID, videoID]);
-
-        if (duplicateCheckRow.count >= 16) {
-            //too many sponsors for the same video from the same user
-            return {
-                pass: false,
-                errorCode: 429,
-                errorMessage: "Have submited many sponsors for the same video."
-            };
-        }
-    }
-
-    return CHECK_PASS;
-}
-
 function proxySubmission(req: Request) {
     axios.post(`${config.proxySubmission}/api/skipSegments?userID=${req.query.userID}&videoID=${req.query.videoID}`, req.body)
         .then(res => {
@@ -460,6 +339,7 @@ function proxySubmission(req: Request) {
 
 function preprocessInput(req: Request) {
     const videoID = req.query.videoID || req.body.videoID;
+    const cid = req.query.cid || req.body.cid;
     const userID = req.query.userID || req.body.userID;
     const service = getService(req.query.service, req.body.service);
     const videoDurationParam: VideoDuration = (parseFloat(req.query.videoDuration || req.body.videoDuration) || 0) as VideoDuration;
@@ -477,7 +357,7 @@ function preprocessInput(req: Request) {
     }
     // Add default action type
     segments.forEach((segment) => {
-        if (!Object.values(ActionType).some((val) => val === segment.actionType)){
+        if (!Object.values(ActionType).some((val) => val === segment.actionType)) {
             segment.actionType = ActionType.Skip;
         }
 
@@ -487,7 +367,7 @@ function preprocessInput(req: Request) {
 
     const userAgent = req.query.userAgent ?? req.body.userAgent ?? parseUserAgentFromHeaders(req.headers) ?? "";
 
-    return { videoID, userID, service, videoDuration, videoDurationParam, segments, userAgent };
+    return { videoID, cid, userID, service, videoDuration, videoDurationParam, segments, userAgent };
 }
 
 export async function postSkipSegments(req: Request, res: Response): Promise<Response> {
@@ -496,7 +376,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
     }
 
     // eslint-disable-next-line prefer-const
-    let { videoID, userID: paramUserID, service, videoDuration, videoDurationParam, segments, userAgent } = preprocessInput(req);
+    let { videoID, cid, userID: paramUserID, service, videoDuration, videoDurationParam, segments, userAgent } = preprocessInput(req);
 
     //hash the userID
     if (!paramUserID) {
@@ -616,10 +496,6 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
                 category: segmentInfo.category,
                 segment: segmentInfo.segment,
             });
-        }
-
-        for (let i = 0; i < segments.length; i++) {
-            sendWebhooks(apiVideoDetails, userID, videoID, UUIDs[i], segments[i], service).catch((e) => Logger.error(`call send webhooks ${e}`));
         }
 
         return res.json(newSegments);
