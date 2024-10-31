@@ -434,11 +434,6 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
 
         const timeSubmitted = Date.now();
 
-        // const rateLimitCheckResult = checkRateLimit(userID, videoID, service, timeSubmitted, hashedIP);
-        // if (!rateLimitCheckResult.pass) {
-        //     return res.status(rateLimitCheckResult.errorCode).send(rateLimitCheckResult.errorMessage);
-        // }
-
         //check to see if this user is shadowbanned
         const isBanned = await checkBanStatus(userID, hashedIP);
         const startingVotes = 0;
