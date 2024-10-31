@@ -38,6 +38,7 @@ import { getReputation } from "../utils/reputation";
 async function prepareCategorySegments(
     req: Request,
     videoID: VideoID,
+    cid: string,
     service: Service,
     segments: DBSegment[],
     cache: SegmentCache = { shadowHiddenSegmentIPs: {} },
@@ -121,6 +122,7 @@ async function prepareCategorySegments(
     const filteredSegments = segments.filter((_, index) => shouldFilter[index]);
 
     return (await chooseSegments(videoID, service, filteredSegments, useCache)).map((chosenSegment) => ({
+        cid: chosenSegment.cid,
         category: chosenSegment.category,
         actionType: chosenSegment.actionType,
         segment: [chosenSegment.startTime, chosenSegment.endTime],
@@ -130,12 +132,13 @@ async function prepareCategorySegments(
         videoDuration: chosenSegment.videoDuration,
         userID: chosenSegment.userID,
         description: chosenSegment.description,
-    }));
+    } as Segment));
 }
 
 async function getSegmentsByVideoID(
     req: Request,
     videoID: VideoID,
+    cid: string,
     categories: Category[],
     actionTypes: ActionType[],
     requiredSegments: SegmentUUID[],
@@ -157,13 +160,14 @@ async function getSegmentsByVideoID(
 
         const canUseCache = requiredSegments.length === 0;
         let processedSegments: Segment[] = (
-            await prepareCategorySegments(req, videoID, service, segments, cache, canUseCache)
+            await prepareCategorySegments(req, videoID, cid, service, segments, cache, canUseCache)
         )
             .filter(
                 (segment: Segment) =>
                     categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
             )
             .map((segment: Segment) => ({
+                cid: segment.cid,
                 category: segment.category,
                 actionType: segment.actionType,
                 segment: segment.segment,
@@ -235,6 +239,7 @@ async function getSegmentsByHash(
                     await prepareCategorySegments(
                         req,
                         videoID as VideoID,
+                        "",
                         service,
                         videoData.segments,
                         cache,
@@ -246,6 +251,7 @@ async function getSegmentsByHash(
                             categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
                     )
                     .map((segment) => ({
+                        cid: segment.cid,
                         category: segment.category,
                         actionType: segment.actionType,
                         segment: segment.segment,
@@ -469,6 +475,7 @@ function splitPercentOverlap(groups: OverlappingSegmentGroup[]): OverlappingSegm
 
 async function getSkipSegments(req: Request, res: Response): Promise<Response> {
     const videoID = req.query.videoID as VideoID;
+    const cid = req.query.cid as string;
     if (!videoID) {
         return res.status(400).send("videoID not specified");
     }

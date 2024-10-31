@@ -47,7 +47,7 @@ export interface IncomingSegment {
 }
 
 export interface Segment {
-    cid?: string;
+    cid: string;
     category: Category;
     actionType: ActionType;
     segment: number[];

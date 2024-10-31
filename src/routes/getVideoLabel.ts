@@ -9,6 +9,7 @@ import { getService } from "../utils/getService";
 
 function transformDBSegments(segments: DBSegment[]): Segment[] {
     return segments.map((chosenSegment) => ({
+        cid: "",
         category: chosenSegment.category,
         actionType: chosenSegment.actionType,
         segment: [chosenSegment.startTime, chosenSegment.endTime],
@@ -89,7 +90,7 @@ async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Service): P
     const fetchFromDB = () => db
         .prepare(
             "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "description" FROM "sponsorTimes" 
+            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "description" FROM "sponsorTimes"
             WHERE "videoID" = ? AND "service" = ? AND "actionType" = 'full' AND "hidden" = 0 AND "shadowHidden" = 0`,
             [videoID, service]
         ) as Promise<DBSegment[]>;
