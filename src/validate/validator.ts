@@ -14,7 +14,7 @@ function fail(errorMessage: string): ValidationResult {
 }
 
 export function validateCid(cid: string) {
-    if (/^[1-9]\d*$/.test(cid)) {
+    if (!cid || /^[1-9]\d*$/.test(cid)) {
         return pass();
     }
     return fail("cid有误");
