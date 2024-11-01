@@ -22,6 +22,7 @@ import { getReputation } from "../utils/reputation";
 import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { deleteLockCategories } from "./deleteLockCategories";
 import { vote } from "./voteOnSponsorTime";
+import { validateCid, validatePrivateUserID } from "../validate/validator";
 
 type CheckResult = {
     pass: boolean,
@@ -109,8 +110,16 @@ async function checkUserActiveWarning(userID: HashedUserID): Promise<CheckResult
     return CHECK_PASS;
 }
 
-async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID: HashedUserID
-    , segments: IncomingSegment[], videoDurationParam: number, userAgent: string, service: Service): Promise<CheckResult> {
+async function checkInvalidFields(
+    videoID: VideoID,
+    cid: string,
+    userID: UserID,
+    hashedUserID: HashedUserID,
+    segments: IncomingSegment[],
+    videoDurationParam: number,
+    userAgent: string,
+    service: Service
+): Promise<CheckResult> {
     const invalidFields = [];
     const errors = [];
     if (typeof videoID !== "string" || videoID?.length == 0) {
@@ -120,14 +129,25 @@ async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID
         const sanitizedVideoID = biliID.validate(videoID) ? videoID : biliID.sanitize(videoID);
         if (!biliID.validate(sanitizedVideoID)) {
             invalidFields.push("videoID");
-            errors.push("YouTube videoID could not be extracted");
+            errors.push("无法提取BVID");
         }
     }
-    const minLength = config.minUserIDLength;
-    if (typeof userID !== "string" || userID?.length < minLength) {
+
+    let pass: boolean;
+    let errorMessage: string;
+
+    ({ pass, errorMessage } = validatePrivateUserID(userID));
+    if (!pass) {
         invalidFields.push("userID");
-        if (userID?.length < minLength) errors.push(`userID must be at least ${minLength} characters long`);
+        errors.push(errorMessage);
     }
+
+    ({ pass: pass, errorMessage: errorMessage } = validateCid(cid));
+    if (!pass) {
+        invalidFields.push("cid");
+        errors.push(errorMessage);
+    }
+
     if (!Array.isArray(segments) || segments.length == 0) {
         invalidFields.push("segments");
     }
@@ -135,13 +155,17 @@ async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID
     for (const segmentPair of segments) {
         const startTime = segmentPair.segment[0];
         const endTime = segmentPair.segment[1];
-        if ((typeof startTime === "string" && startTime.includes(":")) ||
-            (typeof endTime === "string" && endTime.includes(":"))) {
+        if (
+            (typeof startTime === "string" && startTime.includes(":")) ||
+            (typeof endTime === "string" && endTime.includes(":"))
+        ) {
             invalidFields.push("segment time");
         }
 
-        if (typeof segmentPair.description !== "string"
-                || (segmentPair.description.length !== 0 && segmentPair.actionType !== ActionType.Chapter)) {
+        if (
+            typeof segmentPair.description !== "string" ||
+            (segmentPair.description.length !== 0 && segmentPair.actionType !== ActionType.Chapter)
+        ) {
             invalidFields.push("segment description");
         }
 
@@ -151,7 +175,9 @@ async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID
 
         const permission = await canSubmit(hashedUserID, segmentPair.category);
         if (!permission.canSubmit) {
-            Logger.warn(`Rejecting submission due to lack of permissions for category ${segmentPair.category}: ${segmentPair.segment} ${hashedUserID} ${videoID} ${videoDurationParam} ${userAgent}`);
+            Logger.warn(
+                `Rejecting submission due to lack of permissions for category ${segmentPair.category}: ${segmentPair.segment} ${hashedUserID} ${videoID} ${videoDurationParam} ${userAgent}`
+            );
             invalidFields.push(`permission to submit ${segmentPair.category}`);
             errors.push(permission.reason);
         }
@@ -164,7 +190,7 @@ async function checkInvalidFields(videoID: VideoID, userID: UserID, hashedUserID
         return {
             pass: false,
             errorMessage: `No valid ${formattedFields}.${formattedErrors}`,
-            errorCode: 400
+            errorCode: 400,
         };
     }
 
@@ -384,7 +410,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
     }
     const userID: HashedUserID = await getHashCache(paramUserID);
 
-    const invalidCheckResult = await checkInvalidFields(videoID, paramUserID, userID, segments, videoDurationParam, userAgent, service);
+    const invalidCheckResult = await checkInvalidFields(videoID, cid, paramUserID, userID, segments, videoDurationParam, userAgent, service);
     if (!invalidCheckResult.pass) {
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
     }
