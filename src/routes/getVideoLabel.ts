@@ -1,15 +1,13 @@
 import { Request, Response } from "express";
-import { db } from "../databases/databases";
-import { videoLabelsHashKey, videoLabelsKey } from "../utils/redisKeys";
+import { getSegmentsFromDBByHash, getSegmentsFromDBByVideoID } from "../dao/skipSegment";
 import { SBRecord } from "../types/lib.model";
-import { DBSegment, Segment, Service, VideoData, VideoID, VideoIDHash } from "../types/segments.model";
-import { Logger } from "../utils/logger";
-import { QueryCacher } from "../utils/queryCacher";
+import { ActionType, DBSegment, HiddenType, Segment, Service, VideoData, VideoID, VideoIDHash } from "../types/segments.model";
 import { getService } from "../utils/getService";
+import { Logger } from "../utils/logger";
 
 function transformDBSegments(segments: DBSegment[]): Segment[] {
     return segments.map((chosenSegment) => ({
-        cid: "",
+        cid: chosenSegment.cid,
         category: chosenSegment.category,
         actionType: chosenSegment.actionType,
         segment: [chosenSegment.startTime, chosenSegment.endTime],
@@ -70,37 +68,9 @@ async function getLabelsByHash(hashedVideoIDPrefix: VideoIDHash, service: Servic
     }
 }
 
-async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () => db
-        .prepare(
-            "all",
-            `SELECT "startTime", "endTime", "videoID", "votes", "locked", "UUID", "userID", "category", "actionType", "hashedVideoID", "description" FROM "sponsorTimes"
-            WHERE "hashedVideoID" LIKE ? AND "service" = ? AND "actionType" = 'full' AND "hidden" = 0 AND "shadowHidden" = 0`,
-            [`${hashedVideoIDPrefix}%`, service]
-        ) as Promise<DBSegment[]>;
-
-    if (hashedVideoIDPrefix.length === 3) {
-        return await QueryCacher.get(fetchFromDB, videoLabelsHashKey(hashedVideoIDPrefix, service));
-    }
-
-    return await fetchFromDB();
-}
-
-async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Service): Promise<DBSegment[]> {
-    const fetchFromDB = () => db
-        .prepare(
-            "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "description" FROM "sponsorTimes"
-            WHERE "videoID" = ? AND "service" = ? AND "actionType" = 'full' AND "hidden" = 0 AND "shadowHidden" = 0`,
-            [videoID, service]
-        ) as Promise<DBSegment[]>;
-
-    return await QueryCacher.get(fetchFromDB, videoLabelsKey(videoID, service));
-}
-
 function chooseSegment<T extends DBSegment>(choices: T[]): Segment[] {
     // filter out -2 segments
-    choices = choices.filter((segment) => segment.votes > -2);
+    choices = choices.filter(segment => segment.actionType == ActionType.Full && segment.votes > -2 && segment.hidden == HiddenType.Show);
     const results = [];
     // trivial decisions
     if (choices.length === 0) {
@@ -161,7 +131,5 @@ async function endpoint(req: Request, res: Response): Promise<Response> {
 }
 
 export {
-    getLabelsByVideoID,
-    getLabelsByHash,
-    endpoint
+    endpoint, getLabelsByHash, getLabelsByVideoID
 };
