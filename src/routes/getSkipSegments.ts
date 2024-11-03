@@ -121,7 +121,7 @@ async function prepareCategorySegments(
 
     const filteredSegments = segments.filter((_, index) => shouldFilter[index]);
 
-    return (await chooseSegments(videoID, service, filteredSegments, useCache)).map(
+    return (await chooseSegments(videoID, cid, service, filteredSegments, useCache)).map(
         (chosenSegment) =>
             ({
                 cid: chosenSegment.cid,
@@ -221,24 +221,25 @@ async function getSegmentsByHash(
         const segmentPerVideoID: SegmentPerVideoID = (await getSegmentsFromDBByHash(hashedVideoIDPrefix, service))
             .filter((segment) => !cid || segment.cid == cid)
             .reduce((acc: SegmentPerVideoID, segment: DBSegment) => {
-                acc[segment.videoID] = acc[segment.videoID] || {
+                acc[`${segment.videoID},${segment.cid}`] = acc[`${segment.videoID},${segment.cid}`] || {
                     segments: [],
                 };
                 if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
 
-                acc[segment.videoID].segments ??= [];
-                acc[segment.videoID].segments.push(segment);
+                acc[`${segment.videoID},${segment.cid}`].segments ??= [];
+                acc[`${segment.videoID},${segment.cid}`].segments.push(segment);
 
                 return acc;
             }, {});
 
         await Promise.all(
-            Object.entries(segmentPerVideoID).map(async ([videoID, videoData]) => {
+            Object.entries(segmentPerVideoID).map(async ([videoIdCid, videoData]) => {
                 const data: VideoData = {
                     segments: [],
                 };
 
                 const canUseCache = requiredSegments.length === 0;
+                const [videoID, cid] = videoIdCid.split(",");
                 data.segments = (
                     await prepareCategorySegments(
                         req,
@@ -343,6 +344,7 @@ function getBestChoice<T extends VotableObject>(
 
 async function chooseSegments(
     videoID: VideoID,
+    cid: string,
     service: Service,
     segments: DBSegment[],
     useCache: boolean
@@ -351,7 +353,7 @@ async function chooseSegments(
 
     const groups =
         useCache && config.useCacheForSegmentGroups
-            ? await QueryCacher.get(fetchData, skipSegmentGroupsKey(videoID, service))
+            ? await QueryCacher.get(fetchData, skipSegmentGroupsKey(videoID, cid, service))
             : await fetchData();
 
     // Filter for only 1 item for POI categories and Full video

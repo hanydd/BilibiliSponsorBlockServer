@@ -7,8 +7,8 @@ import { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 export const skipSegmentsKey = (videoID: VideoID, service: Service): string =>
     `segments.v5.${service}.videoID.${videoID}`;
 
-export const skipSegmentGroupsKey = (videoID: VideoID, service: Service): string =>
-    `segments.groups.v4.${service}.videoID.${videoID}`;
+export const skipSegmentGroupsKey = (videoID: VideoID, cid: string, service: Service): string =>
+    `segments.groups.v4.${service}.videoID.${videoID}.${cid}`;
 
 export function skipSegmentsHashKey(hashedVideoIDPrefix: VideoIDHash, service: Service): string {
     hashedVideoIDPrefix = hashedVideoIDPrefix.substring(0, 4) as VideoIDHash;
@@ -36,11 +36,9 @@ export function shaHashKey(singleIter: HashedValue): string {
     return `sha.hash.${singleIter}`;
 }
 
-export const tempVIPKey = (userID: HashedUserID): string =>
-    `vip.temp.${userID}`;
+export const tempVIPKey = (userID: HashedUserID): string => `vip.temp.${userID}`;
 
-export const videoLabelsKey = (videoID: VideoID, service: Service): string =>
-    `labels.v1.${service}.videoID.${videoID}`;
+export const videoLabelsKey = (videoID: VideoID, service: Service): string => `labels.v1.${service}.videoID.${videoID}`;
 
 export function videoLabelsHashKey(hashedVideoIDPrefix: VideoIDHash, service: Service): string {
     hashedVideoIDPrefix = hashedVideoIDPrefix.substring(0, 3) as VideoIDHash;
@@ -49,7 +47,7 @@ export function videoLabelsHashKey(hashedVideoIDPrefix: VideoIDHash, service: Se
     return `labels.v1.${service}.${hashedVideoIDPrefix}`;
 }
 
-export function userFeatureKey (userID: HashedUserID, feature: Feature): string {
+export function userFeatureKey(userID: HashedUserID, feature: Feature): string {
     return `user.v1.${userID}.feature.${feature}`;
 }
 
