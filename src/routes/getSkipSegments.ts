@@ -203,7 +203,8 @@ async function getSegmentsByHash(
     categories: Category[],
     actionTypes: ActionType[],
     requiredSegments: SegmentUUID[],
-    service: Service
+    service: Service,
+    cid: string = null
 ): Promise<SBRecord<VideoID, VideoData>> {
     const cache: SegmentCache = { shadowHiddenSegmentIPs: {} };
     const segments: SBRecord<VideoID, VideoData> = {};
@@ -217,19 +218,19 @@ async function getSegmentsByHash(
     try {
         type SegmentPerVideoID = SBRecord<VideoID, { segments: DBSegment[] }>;
 
-        const segmentPerVideoID: SegmentPerVideoID = (
-            await getSegmentsFromDBByHash(hashedVideoIDPrefix, service)
-        ).reduce((acc: SegmentPerVideoID, segment: DBSegment) => {
-            acc[segment.videoID] = acc[segment.videoID] || {
-                segments: [],
-            };
-            if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
+        const segmentPerVideoID: SegmentPerVideoID = (await getSegmentsFromDBByHash(hashedVideoIDPrefix, service))
+            .filter((segment) => !cid || segment.cid == cid)
+            .reduce((acc: SegmentPerVideoID, segment: DBSegment) => {
+                acc[segment.videoID] = acc[segment.videoID] || {
+                    segments: [],
+                };
+                if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
 
-            acc[segment.videoID].segments ??= [];
-            acc[segment.videoID].segments.push(segment);
+                acc[segment.videoID].segments ??= [];
+                acc[segment.videoID].segments.push(segment);
 
-            return acc;
-        }, {});
+                return acc;
+            }, {});
 
         await Promise.all(
             Object.entries(segmentPerVideoID).map(async ([videoID, videoData]) => {
@@ -242,7 +243,7 @@ async function getSegmentsByHash(
                     await prepareCategorySegments(
                         req,
                         videoID as VideoID,
-                        "",
+                        cid,
                         service,
                         videoData.segments,
                         cache,
@@ -490,7 +491,15 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
 
     const { categories, actionTypes, requiredSegments, service } = parseResult;
     const hashedVideoID = getHash(videoID, 1).substring(0, 4) as VideoIDHash;
-    const allSegments = await getSegmentsByHash(req, hashedVideoID, categories, actionTypes, requiredSegments, service);
+    const allSegments = await getSegmentsByHash(
+        req,
+        hashedVideoID,
+        categories,
+        actionTypes,
+        requiredSegments,
+        service,
+        cid
+    );
 
     if (allSegments === null || allSegments === undefined) {
         return res.sendStatus(500);
