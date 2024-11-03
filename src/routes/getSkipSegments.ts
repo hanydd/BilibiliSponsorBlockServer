@@ -121,18 +121,21 @@ async function prepareCategorySegments(
 
     const filteredSegments = segments.filter((_, index) => shouldFilter[index]);
 
-    return (await chooseSegments(videoID, service, filteredSegments, useCache)).map((chosenSegment) => ({
-        cid: chosenSegment.cid,
-        category: chosenSegment.category,
-        actionType: chosenSegment.actionType,
-        segment: [chosenSegment.startTime, chosenSegment.endTime],
-        UUID: chosenSegment.UUID,
-        locked: chosenSegment.locked,
-        votes: chosenSegment.votes,
-        videoDuration: chosenSegment.videoDuration,
-        userID: chosenSegment.userID,
-        description: chosenSegment.description,
-    } as Segment));
+    return (await chooseSegments(videoID, service, filteredSegments, useCache)).map(
+        (chosenSegment) =>
+            ({
+                cid: chosenSegment.cid,
+                category: chosenSegment.category,
+                actionType: chosenSegment.actionType,
+                segment: [chosenSegment.startTime, chosenSegment.endTime],
+                UUID: chosenSegment.UUID,
+                locked: chosenSegment.locked,
+                votes: chosenSegment.votes,
+                videoDuration: chosenSegment.videoDuration,
+                userID: chosenSegment.userID,
+                description: chosenSegment.description,
+            } as Segment)
+    );
 }
 
 async function getSegmentsByVideoID(
@@ -493,9 +496,13 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
         return res.sendStatus(500);
     }
 
-    const segments = allSegments[videoID]?.segments;
+    let segments = allSegments[videoID]?.segments;
     if (!segments || segments.length === 0) {
         return res.sendStatus(404);
+    }
+
+    if (cid) {
+        segments = segments.filter((s) => s.cid == cid);
     }
 
     await getEtag("skipSegments", videoID as string, service)
