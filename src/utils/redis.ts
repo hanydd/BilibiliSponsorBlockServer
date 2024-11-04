@@ -1,13 +1,14 @@
-import { config } from "../config";
-import { Logger } from "./logger";
-import { RedisClientType, SetOptions, createClient } from "redis";
-import { RedisCommandArgument, RedisCommandArguments, RedisCommandRawReply } from "@redis/client/dist/lib/commands";
 import { RedisClientOptions } from "@redis/client/dist/lib/client";
+import { RedisCommandArgument, RedisCommandArguments, RedisCommandRawReply } from "@redis/client/dist/lib/commands";
+import { ScanCommandOptions } from "@redis/client/dist/lib/commands/SCAN";
+import { LRUCache } from "lru-cache";
+import { compress, uncompress } from "lz4-napi";
 import { RedisReply } from "rate-limit-redis";
+import { RedisClientType, SetOptions, createClient } from "redis";
+import { config } from "../config";
 import { db } from "../databases/databases";
 import { Postgres } from "../databases/Postgres";
-import { compress, uncompress } from "lz4-napi";
-import { LRUCache } from "lru-cache";
+import { Logger } from "./logger";
 import { shouldClientCacheKey } from "./redisKeys";
 
 export interface RedisStats {
@@ -31,6 +32,7 @@ interface RedisSB {
     setEx(key: RedisCommandArgument, seconds: number, value: RedisCommandArgument): Promise<string>;
     setExWithCache(key: RedisCommandArgument, seconds: number, value: RedisCommandArgument): Promise<string>;
     del(...keys: [RedisCommandArgument]): Promise<number>;
+    delPattern(pattern: RedisCommandArgument): Promise<number>;
     increment?(key: RedisCommandArgument): Promise<RedisCommandRawReply[]>;
     sendCommand(args: RedisCommandArguments, options?: RedisClientOptions): Promise<RedisReply>;
     ttl(key: RedisCommandArgument): Promise<number>;
@@ -45,6 +47,7 @@ let exportClient: RedisSB = {
     setEx: () => Promise.resolve(null),
     setExWithCache: () => Promise.resolve(null),
     del: () => Promise.resolve(null),
+    delPattern: () => Promise.resolve(null),
     increment: () => Promise.resolve(null),
     sendCommand: () => Promise.resolve(null),
     quit: () => Promise.resolve(null),
@@ -197,6 +200,13 @@ if (config.redis?.enabled) {
         } else {
             return del(...keys);
         }
+    };
+
+    const scan = client.scan.bind(client);
+    exportClient.delPattern = async (pattern) => {
+        const keys = await scan(0, { MATCH: pattern } as ScanCommandOptions);
+        await Promise.allSettled(keys.keys.map((key) => exportClient.del(key)));
+        return keys.keys.length;
     };
 
     const ttl = client.ttl.bind(client);

@@ -149,6 +149,10 @@ function clearKey(key: string): void {
     redis.del(key).catch((err) => Logger.error(err));
 }
 
+function clearKeyPattern(keyPattern: string): void {
+    redis.delPattern(keyPattern).catch((err) => Logger.error(err));
+}
+
 function clearSegmentCache(videoInfo: {
     videoID: VideoID;
     hashedVideoID: VideoIDHash;
@@ -157,7 +161,7 @@ function clearSegmentCache(videoInfo: {
 }): void {
     if (videoInfo) {
         redis.del(skipSegmentsKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
-        redis.del(skipSegmentGroupsKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
+        clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, "*", videoInfo.service));
         redis.del(skipSegmentsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
@@ -220,6 +224,7 @@ export const QueryCacher = {
     getTraced,
     getAndSplit,
     clearKey,
+    clearKeyPattern,
     clearSegmentCache,
     clearSegmentCacheByID,
     getKeyLastModified,
