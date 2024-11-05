@@ -23,6 +23,7 @@ import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { deleteLockCategories } from "./deleteLockCategories";
 import { vote } from "./voteOnSponsorTime";
 import { validateCid, validatePrivateUserID } from "../validate/validator";
+import { durationEquals } from "../utils/durationUtil";
 
 type CheckResult = {
     pass: boolean,
@@ -44,9 +45,18 @@ const CHECK_PASS: CheckResult = {
 //   false for a pass - it was confusing and lead to this bug - any use of this function in
 //   the future could have the same problem.
 async function autoModerateSubmission(apiVideoDetails: VideoDetail,
-    submission: { videoID: VideoID; userID: HashedUserID; segments: IncomingSegment[], service: Service, videoDuration: number }) {
+    submission: { videoID: VideoID; cid: string; userID: HashedUserID; segments: IncomingSegment[], service: Service, videoDuration: number }) {
+    // check if cid exist
+    const pageDetail = apiVideoDetails.page.filter((p) => p.cid === submission.cid);
+    if (!submission.cid) {
+        return "分p视频无法获取cid，请使用0.5.0以上版本的插件！";
+    }
+    if ( pageDetail.length == 0) {
+        return "分P视频cid错误";
+    }
     // get duration from API
-    const apiDuration = apiVideoDetails.duration;
+    const apiDuration = pageDetail[0].duration;
+
     // if API fail or returns 0, get duration from client
     const duration = apiDuration || submission.videoDuration;
     // return false on undefined or 0
@@ -289,10 +299,10 @@ async function checkEachSegmentValid(rawIP: IPAddress, paramUserID: UserID, user
     return CHECK_PASS;
 }
 
-async function checkByAutoModerator(videoID: VideoID, userID: HashedUserID, segments: IncomingSegment[], service: Service, apiVideoDetails: VideoDetail, videoDuration: number): Promise<CheckResult> {
+async function checkByAutoModerator(videoID: VideoID, cid: string, userID: HashedUserID, segments: IncomingSegment[], service: Service, apiVideoDetails: VideoDetail, videoDuration: number): Promise<CheckResult> {
     // Auto moderator check
     if (service == Service.YouTube) {
-        const autoModerateResult = await autoModerateSubmission(apiVideoDetails, { videoID, userID, segments, service, videoDuration });
+        const autoModerateResult = await autoModerateSubmission(apiVideoDetails, { videoID, cid, userID, segments, service, videoDuration });
         if (autoModerateResult) {
             return {
                 pass: false,
@@ -304,31 +314,36 @@ async function checkByAutoModerator(videoID: VideoID, userID: HashedUserID, segm
     return CHECK_PASS;
 }
 
-async function updateDataIfVideoDurationChange(videoID: VideoID, service: Service, videoDuration: VideoDuration, videoDurationParam: VideoDuration) {
+async function updateDataIfVideoDurationChange(videoID: VideoID, cid: string, service: Service, videoDuration: VideoDuration, videoDurationParam: VideoDuration) {
     let lockedCategoryList = await db.prepare("all", 'SELECT category, "actionType", reason from "lockCategories" where "videoID" = ? AND "service" = ?', [videoID, service]);
 
-    const previousSubmissions = await db.prepare("all",
-        `SELECT "videoDuration", "UUID"
+    let previousSubmissions = await db.prepare("all",
+        `SELECT "videoDuration", "UUID", "cid"
         FROM "sponsorTimes"
         WHERE "videoID" = ? AND "service" = ? AND
             "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND
             "votes" > -2 AND "videoDuration" != 0`,
-        [videoID, service]
-    ) as {videoDuration: VideoDuration, UUID: SegmentUUID}[];
+        [videoID, cid, service]
+    ) as {videoDuration: VideoDuration, UUID: SegmentUUID, cid: string}[];
 
     // If the video's duration is changed, then the video should be unlocked and old submissions should be hidden
     const videoDurationChanged = (videoDuration: number) => videoDuration != 0
         && previousSubmissions.length > 0 && !previousSubmissions.some((e) => Math.abs(videoDuration - e.videoDuration) < 2);
 
-    let apiVideoDetails: VideoDetail = null;
-    if (service == Service.YouTube) {
-        // Don't use cache if we don't know the video duration, or the client claims that it has changed
-        const ignoreCache = !videoDurationParam || previousSubmissions.length === 0 || videoDurationChanged(videoDurationParam);
-        apiVideoDetails = await getVideoDetails(videoID, ignoreCache);
+    // Don't use cache if we don't know the video duration, or the client claims that it has changed
+    const ignoreCache = !cid || !videoDurationParam || previousSubmissions.length === 0 || videoDurationChanged(videoDurationParam);
+    const apiVideoDetails: VideoDetail = await getVideoDetails(videoID, ignoreCache);
+
+    // if video only has 1 p, use that
+    if (!cid && apiVideoDetails?.page.length == 1) {
+        cid = apiVideoDetails.page[0].cid;
     }
-    const apiVideoDuration = apiVideoDetails?.duration as VideoDuration;
-    if (!videoDurationParam || (apiVideoDuration && Math.abs(videoDurationParam - apiVideoDuration) > 2)) {
+
+    previousSubmissions = previousSubmissions.filter(s => s.cid == cid);
+
+    const apiVideoDuration = apiVideoDetails.page.filter(p => p.cid == cid)[0].duration as VideoDuration;
+    if (!videoDurationParam || (apiVideoDuration && !durationEquals(videoDurationParam, apiVideoDuration))) {
         // If api duration is far off, take that one instead (it is only precise to seconds, not millis)
         videoDuration = apiVideoDuration || 0 as VideoDuration;
     }
@@ -337,16 +352,17 @@ async function updateDataIfVideoDurationChange(videoID: VideoID, service: Servic
     if (videoDurationChanged(videoDuration) && (!videoDurationParam || videoDurationChanged(videoDurationParam))) {
         // Hide all previous submissions
         await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = 1
-            WHERE "videoID" = ? AND "service" = ? AND "videoDuration" != ?
+            WHERE "videoID" = ? AND "cid" = ? AND "service" = ? AND "videoDuration" != ?
             AND "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND "votes" > -2`,
-        [videoID, service, videoDuration]);
+        [videoID, cid, service, videoDuration]);
 
         lockedCategoryList = [];
         deleteLockCategories(videoID, null, null, service).catch((e) => Logger.error(`deleting lock categories: ${e}`));
     }
 
     return {
+        cid,
         videoDuration,
         apiVideoDetails,
         lockedCategoryList
@@ -432,7 +448,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         const isTempVIP = (await isUserTempVIP(userID, videoID));
         const rawIP = getIP(req);
 
-        const newData = await updateDataIfVideoDurationChange(videoID, service, videoDuration, videoDurationParam);
+        const newData = await updateDataIfVideoDurationChange(videoID, cid, service, videoDuration, videoDurationParam);
         videoDuration = newData.videoDuration;
         const { lockedCategoryList, apiVideoDetails } = newData;
 
@@ -444,7 +460,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         }
 
         if (!(isVIP || isTempVIP)) {
-            const autoModerateCheckResult = await checkByAutoModerator(videoID, userID, segments, service, apiVideoDetails, videoDurationParam);
+            const autoModerateCheckResult = await checkByAutoModerator(videoID, cid, userID, segments, service, apiVideoDetails, videoDurationParam);
             if (!autoModerateCheckResult.pass) {
                 lock.unlock();
                 return res.status(autoModerateCheckResult.errorCode).send(autoModerateCheckResult.errorMessage);

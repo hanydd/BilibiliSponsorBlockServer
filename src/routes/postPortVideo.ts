@@ -39,10 +39,10 @@ export const PORT_SEGMENT_USER_ID = "PORT";
 
 export async function postPortVideo(req: Request, res: Response): Promise<Response> {
     const bvID = req.query.bvID || req.body.bvID;
+    let cid = req.query.cid || req.body.cid;
     const ytbID = req.query.ytbID || req.body.ytbID;
     const paramUserID = req.query.userID || req.body.userID;
-    const paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) ||
-        0) as VideoDuration;
+    const paramBiliDuration: VideoDuration = (parseFloat(req.query.biliDuration || req.body.biliDuration) || 0) as VideoDuration;
     const rawIP = getIP(req);
 
     const hashedBvID = getHash(bvID, 1);
@@ -64,12 +64,19 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     const [ytbSegments, biliVideoDetail] = await Promise.all([getYoutubeSegments(ytbID), getVideoDetails(bvID, true)]);
 
+    // get default cid
+    if (!cid) {
+        const pageDetail = biliVideoDetail.page.filter((p) => p.cid == cid);
+        if (pageDetail.length == 0) {
+            return res.status(400).send("分p视频无法获取cid，请使用0.5.0以上版本的插件！");
+        }
+        cid = pageDetail[0].cid;
+    }
+
     // get ytb video duration
     let ytbDuration = 0 as VideoDuration;
     if (ytbSegments && ytbSegments.length > 0) {
-        ytbDuration = average(
-            ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)
-        ) as VideoDuration;
+        ytbDuration = average(ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)) as VideoDuration;
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
     }
     if (!ytbDuration) {
@@ -83,7 +90,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/hanydd/BilibiliSponsorBlock/issues/new`);
     }
-    const apiBiliDuration = biliVideoDetail?.duration as VideoDuration;
+    const apiBiliDuration = biliVideoDetail?.page.filter((p) => p.cid == cid)[0].duration as VideoDuration;
     if (!paramBiliDuration || !apiBiliDuration) {
         lock.unlock();
         return res.status(400).send(`无法获取B站视频信息，请重试。
@@ -111,9 +118,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // check if the existing data is exactly the same as the submitted ones
     const exactMatches = existingMatch.filter(
-        (port) =>
-            port.ytbID == ytbID &&
-            durationsAllEqual([port.biliDuration, port.ytbDuration, apiBiliDuration, ytbDuration])
+        (port) => port.ytbID == ytbID && durationsAllEqual([port.biliDuration, port.ytbDuration, apiBiliDuration, ytbDuration])
     );
     if (exactMatches.length > 0) {
         lock.unlock();
@@ -204,11 +209,12 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
                 hashedBvID,
             ]
         );
-        await privateDB.prepare(
-            "run",
-            `INSERT INTO "portVideo" ("bvID", "UUID", "hashedIP", "timeSubmitted") VALUES (?,?,?,?)`,
-            [bvID, matchVideoUUID, hashedIP, timeSubmitted]
-        );
+        await privateDB.prepare("run", `INSERT INTO "portVideo" ("bvID", "UUID", "hashedIP", "timeSubmitted") VALUES (?,?,?,?)`, [
+            bvID,
+            matchVideoUUID,
+            hashedIP,
+            timeSubmitted,
+        ]);
     } catch (err) {
         lock.unlock();
         Logger.error(err as string);

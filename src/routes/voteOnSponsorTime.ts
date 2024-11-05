@@ -58,13 +58,13 @@ interface VoteData {
 const videoDurationChanged = (segmentDuration: number, APIDuration: number) => (APIDuration > 0 && Math.abs(segmentDuration - APIDuration) > 2);
 
 async function updateSegmentVideoDuration(UUID: SegmentUUID) {
-    const { videoDuration, videoID, service } = await db.prepare("get", `select "videoDuration", "videoID", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
+    const { videoDuration, videoID, cid, service } = await db.prepare("get", `select "videoDuration", "videoID", "cid", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
     let apiVideoDetails: VideoDetail = null;
     if (service == Service.YouTube) {
         // don't use cache since we have no information about the video length
         apiVideoDetails = await getVideoDetails(videoID, true);
     }
-    const apiVideoDuration = apiVideoDetails?.duration as VideoDuration;
+    const apiVideoDuration = apiVideoDetails?.page.filter((p) => p.cid == cid)[0].duration as VideoDuration;
     if (videoDurationChanged(videoDuration, apiVideoDuration)) {
         Logger.info(`Video duration changed for ${videoID} from ${videoDuration} to ${apiVideoDuration}`);
         await db.prepare("run", `UPDATE "sponsorTimes" SET "videoDuration" = ? WHERE "UUID" = ?`, [apiVideoDuration, UUID]);
@@ -72,13 +72,13 @@ async function updateSegmentVideoDuration(UUID: SegmentUUID) {
 }
 
 async function checkVideoDuration(UUID: SegmentUUID) {
-    const { videoID, service } = await db.prepare("get", `select "videoID", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
+    const { videoID, cid, service } = await db.prepare("get", `select "videoID", "cid", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
     let apiVideoDetails: VideoDetail = null;
     if (service == Service.YouTube) {
         // don't use cache since we have no information about the video length
         apiVideoDetails = await getVideoDetails(videoID, true);
     }
-    const apiVideoDuration = apiVideoDetails?.duration as VideoDuration;
+    const apiVideoDuration = apiVideoDetails?.page.filter((p) => p.cid == cid)[0].duration as VideoDuration;
     // if no videoDuration return early
     if (isNaN(apiVideoDuration)) return;
     // fetch latest submission

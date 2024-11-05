@@ -5,13 +5,7 @@ import {
     getPortVideoDBByBvIDCached,
     hidePortVideoByUUID,
 } from "../dao/portVideo";
-import {
-    createSegmentsFromYTB,
-    getSegmentsFromDBByVideoID,
-    hideSegmentsByUUID,
-    saveNewSegments,
-    updateVotes,
-} from "../dao/skipSegment";
+import { createSegmentsFromYTB, getSegmentsFromDBByVideoID, hideSegmentsByUUID, saveNewSegments, updateVotes } from "../dao/skipSegment";
 import { HashedValue } from "../types/hash.model";
 import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
@@ -43,17 +37,14 @@ export async function updatePortedSegments(req: Request, res: Response) {
 
 export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
     const bvID = portVideo.bvID;
+    const cid = portVideo.cid;
     const ytbID = portVideo.ytbID;
     const [ytbSegments, biliVideoDetail] = await Promise.all([getYoutubeSegments(ytbID), getVideoDetails(bvID, true)]);
     // get ytb video duration
     let apiYtbDuration = 0 as VideoDuration;
     if (ytbSegments && ytbSegments.length > 0) {
-        apiYtbDuration = average(
-            ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)
-        ) as VideoDuration;
-        Logger.info(
-            `Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${apiYtbDuration}s`
-        );
+        apiYtbDuration = average(ytbSegments.filter((s) => s.videoDuration > 0).map((s) => s.videoDuration)) as VideoDuration;
+        Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${apiYtbDuration}s`);
     }
     if (!apiYtbDuration) {
         apiYtbDuration = await getYoutubeVideoDuraion(ytbID);
@@ -66,7 +57,7 @@ export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
         // if no youtube duration is provided, dont't do anything
         return;
     }
-    const apiBiliDuration = biliVideoDetail?.duration as VideoDuration;
+    const apiBiliDuration = biliVideoDetail?.page.filter((p) => p.cid == cid)[0]?.duration as VideoDuration;
     if (!apiBiliDuration) {
         // if no bili duration is found, dont't do anything
         return;

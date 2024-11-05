@@ -13,7 +13,6 @@ export interface VideoPageDetail {
 
 export interface VideoDetail {
     videoId: string;
-    duration: number;
     authorId: string;
     authorName: string;
     title: string;
@@ -24,7 +23,6 @@ export interface VideoDetail {
 const convertFromVideoViewAPI = (videoId: string, input: BilibiliVideoDetailView): VideoDetail => {
     return {
         videoId: videoId,
-        duration: input.pages.length >= 1 && input.pages[0].duration ? input.pages[0].duration : input.duration,
         authorId: input.owner.mid.toString(),
         authorName: input.owner.name,
         title: input.title,
@@ -38,7 +36,7 @@ export function getVideoDetails(videoId: string, ignoreCache = false): Promise<V
         QueryCacher.clearKey(videoDetailCacheKey(videoId));
     }
 
-    return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId));
+    return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId), 365 * 24 * 60 * 60);
 
     async function getVideoDetailsFromAPI(videoId: string): Promise<VideoDetail> {
         try {

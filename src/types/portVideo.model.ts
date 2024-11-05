@@ -17,6 +17,7 @@ export interface PortVideoInterface {
 
 export interface PortVideo {
     bvID: VideoID;
+    cid: string;
     ytbID: VideoID;
     UUID: portVideoUUID;
     votes: number;

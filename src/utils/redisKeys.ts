@@ -84,5 +84,5 @@ export function portVideoUserCountKey() {
 }
 
 export function videoDetailCacheKey(videoID: string) {
-    return `video.detail.v1.videoID.${videoID}`;
+    return `video.detail.v2.videoID.${videoID}`;
 }
