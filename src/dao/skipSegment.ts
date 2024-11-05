@@ -5,7 +5,7 @@ import { DBSegment, HashedIP, HiddenType, Segment, SegmentUUID, Service, VideoID
 import { getHash } from "../utils/getHash";
 import { getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { QueryCacher } from "../utils/queryCacher";
-import { skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
+import { cidListKey, skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
 
 export async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
     const fetchFromDB = () =>
@@ -173,4 +173,11 @@ export async function updateVotes(segments: DBSegment[]): Promise<void> {
     // clear redis cache
     const videoIDSet = new Set(segments.map((s) => s.videoID));
     videoIDSet.forEach((videoID) => QueryCacher.clearSegmentCacheByID(videoID));
+}
+
+export async function getAllCid(videoID: VideoID): Promise<string[]> {
+    const fetchData = async (videoID: VideoID) => {
+        return await db.prepare("all", `SELECT DISTINCT cid FROM "sponsorTimes" WHERE "videoID" =?`, [videoID]);
+    };
+    return await QueryCacher.get(() => fetchData(videoID), cidListKey(videoID));
 }
