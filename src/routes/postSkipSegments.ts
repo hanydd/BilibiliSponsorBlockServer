@@ -403,7 +403,7 @@ async function updateDataIfVideoDurationChange(
             "hidden" = 0 AND "shadowHidden" = 0 AND
             "actionType" != 'full' AND
             "votes" > -2 AND "videoDuration" != 0`,
-        [videoID, cid, service]
+        [videoID, service]
     )) as { videoDuration: VideoDuration; UUID: SegmentUUID; cid: string }[];
 
     // If the video's duration is changed, then the video should be unlocked and old submissions should be hidden
@@ -419,6 +419,11 @@ async function updateDataIfVideoDurationChange(
     // if video only has 1 p, use that
     if (!cid && apiVideoDetails?.page.length == 1) {
         cid = apiVideoDetails.page[0].cid;
+    }
+
+    // check cid is valid or not
+    if (apiVideoDetails.page.filter((p) => p.cid == cid).length == 0) {
+        return false;
     }
 
     previousSubmissions = previousSubmissions.filter((s) => s.cid == cid);
@@ -550,7 +555,11 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         const rawIP = getIP(req);
 
         const newData = await updateDataIfVideoDurationChange(videoID, cid, service, videoDuration, videoDurationParam);
+        if (!newData) {
+            return res.status(400).send("cid有误！请刷新页面再试");
+        }
         videoDuration = newData.videoDuration;
+        cid = newData.cid;
         const { lockedCategoryList, apiVideoDetails } = newData;
 
         // Check if all submissions are correct

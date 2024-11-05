@@ -90,6 +90,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         return res.status(500).send(`无法获取YouTube视频信息，请重试。
 如果始终无法提交，您可以前往项目地址反馈：https://github.com/hanydd/BilibiliSponsorBlock/issues/new`);
     }
+    // check cid
+    if (biliVideoDetail?.page.filter((p) => p.cid == cid).length == 0) {
+        return res.status(400).send("cid有误！请刷新页面再试");
+    }
+    // check duration
     const apiBiliDuration = biliVideoDetail?.page.filter((p) => p.cid == cid)[0].duration as VideoDuration;
     if (!paramBiliDuration || !apiBiliDuration) {
         lock.unlock();
