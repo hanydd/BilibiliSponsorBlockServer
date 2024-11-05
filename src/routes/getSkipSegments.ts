@@ -111,8 +111,7 @@ async function prepareCategorySegments(
                 cache.userHashedIP = await cache.userHashedIPPromise;
             }
             //if this isn't their ip, don't send it to them
-            const shouldShadowHide =
-                ipList?.some((shadowHiddenSegment) => shadowHiddenSegment.hashedIP === cache.userHashedIP) ?? false;
+            const shouldShadowHide = ipList?.some((shadowHiddenSegment) => shadowHiddenSegment.hashedIP === cache.userHashedIP) ?? false;
 
             if (shouldShadowHide) useCache = false;
             return shouldShadowHide;
@@ -162,13 +161,8 @@ async function getSegmentsByVideoID(
         }, {});
 
         const canUseCache = requiredSegments.length === 0;
-        let processedSegments: Segment[] = (
-            await prepareCategorySegments(req, videoID, cid, service, segments, cache, canUseCache)
-        )
-            .filter(
-                (segment: Segment) =>
-                    categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
-            )
+        let processedSegments: Segment[] = (await prepareCategorySegments(req, videoID, cid, service, segments, cache, canUseCache))
+            .filter((segment: Segment) => categories.includes(segment?.category) && actionTypes.includes(segment?.actionType))
             .map((segment: Segment) => ({
                 cid: segment.cid,
                 category: segment.category,
@@ -241,20 +235,9 @@ async function getSegmentsByHash(
                 const canUseCache = requiredSegments.length === 0;
                 const [videoID, cid] = videoIdCid.split(",");
                 data.segments = (
-                    await prepareCategorySegments(
-                        req,
-                        videoID as VideoID,
-                        cid,
-                        service,
-                        videoData.segments,
-                        cache,
-                        canUseCache
-                    )
+                    await prepareCategorySegments(req, videoID as VideoID, cid, service, videoData.segments, cache, canUseCache)
                 )
-                    .filter(
-                        (segment: Segment) =>
-                            categories.includes(segment?.category) && actionTypes.includes(segment?.actionType)
-                    )
+                    .filter((segment: Segment) => categories.includes(segment?.category) && actionTypes.includes(segment?.actionType))
                     .map((segment) => ({
                         cid: segment.cid,
                         category: segment.category,
@@ -395,8 +378,7 @@ async function buildSegmentGroups(segments: DBSegment[]): Promise<OverlappingSeg
             currentGroup.votes += segment.votes;
         }
 
-        if (segment.userID)
-            segment.reputation = Math.min(segment.reputation, (await reputationPromises[i]) || Infinity);
+        if (segment.userID) segment.reputation = Math.min(segment.reputation, (await reputationPromises[i]) || Infinity);
         if (segment.reputation > 0) {
             currentGroup.reputation += segment.reputation;
         }
@@ -437,11 +419,9 @@ function splitPercentOverlap(groups: OverlappingSegmentGroup[]): OverlappingSegm
                 // Since POI and Full video segments will always have <= 0 overlap, they will always be in their own groups
                 return group.segments.some((compareSegment) => {
                     const overlap =
-                        Math.min(segment.endTime, compareSegment.endTime) -
-                        Math.max(segment.startTime, compareSegment.startTime);
+                        Math.min(segment.endTime, compareSegment.endTime) - Math.max(segment.startTime, compareSegment.startTime);
                     const overallDuration =
-                        Math.max(segment.endTime, compareSegment.endTime) -
-                        Math.min(segment.startTime, compareSegment.startTime);
+                        Math.max(segment.endTime, compareSegment.endTime) - Math.min(segment.startTime, compareSegment.startTime);
                     const overlapPercent = overlap / overallDuration;
                     return (
                         (overlapPercent >= 0.1 &&
@@ -493,15 +473,7 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
 
     const { categories, actionTypes, requiredSegments, service } = parseResult;
     const hashedVideoID = getHash(videoID, 1).substring(0, 4) as VideoIDHash;
-    const allSegments = await getSegmentsByHash(
-        req,
-        hashedVideoID,
-        categories,
-        actionTypes,
-        requiredSegments,
-        service,
-        cid
-    );
+    const allSegments = await getSegmentsByHash(req, hashedVideoID, categories, actionTypes, requiredSegments, service, cid);
 
     if (allSegments === null || allSegments === undefined) {
         return res.sendStatus(500);

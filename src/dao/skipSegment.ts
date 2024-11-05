@@ -1,26 +1,13 @@
 import { db, privateDB } from "../databases/databases";
 import { PORT_SEGMENT_USER_ID } from "../routes/postPortVideo";
 import { portVideoUUID } from "../types/portVideo.model";
-import {
-    DBSegment,
-    HashedIP,
-    HiddenType,
-    Segment,
-    SegmentUUID,
-    Service,
-    VideoID,
-    VideoIDHash,
-    Visibility,
-} from "../types/segments.model";
+import { DBSegment, HashedIP, HiddenType, Segment, SegmentUUID, Service, VideoID, VideoIDHash, Visibility } from "../types/segments.model";
 import { getHash } from "../utils/getHash";
 import { getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { QueryCacher } from "../utils/queryCacher";
 import { skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
 
-export async function getSegmentsFromDBByHash(
-    hashedVideoIDPrefix: VideoIDHash,
-    service: Service
-): Promise<DBSegment[]> {
+export async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
     const fetchFromDB = () =>
         db.prepare(
             "all",
@@ -54,19 +41,14 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
  * hide segments by UUID from the same video,
  * provide the video id to clear redis cache
  */
-export async function hideSegmentsByUUID(
-    UUIDs: string[],
-    bvID: VideoID,
-    hiddenType = HiddenType.MismatchHidden
-): Promise<void> {
+export async function hideSegmentsByUUID(UUIDs: string[], bvID: VideoID, hiddenType = HiddenType.MismatchHidden): Promise<void> {
     if (UUIDs.length === 0) {
         return;
     }
-    await db.prepare(
-        "run",
-        `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`,
-        [hiddenType, ...UUIDs]
-    );
+    await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`, [
+        hiddenType,
+        ...UUIDs,
+    ]);
     QueryCacher.clearSegmentCacheByID(bvID);
 }
 
