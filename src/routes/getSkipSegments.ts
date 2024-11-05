@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { partition } from "lodash";
 import { config } from "../config";
-import { getSegmentsFromDBByHash, getSegmentsFromDBByVideoID } from "../dao/skipSegment";
+import { getSegmentsFromDBByHash } from "../dao/skipSegment";
 import { db, privateDB } from "../databases/databases";
 import { Postgres } from "../databases/Postgres";
 import { getEtag } from "../middleware/etag";
@@ -135,60 +135,6 @@ async function prepareCategorySegments(
                 description: chosenSegment.description,
             } as Segment)
     );
-}
-
-async function getSegmentsByVideoID(
-    req: Request,
-    videoID: VideoID,
-    cid: string,
-    categories: Category[],
-    actionTypes: ActionType[],
-    requiredSegments: SegmentUUID[],
-    service: Service
-): Promise<Segment[]> {
-    const cache: SegmentCache = { shadowHiddenSegmentIPs: {} };
-
-    // For old clients
-    const forcePoiAsSkip = !actionTypes.includes(ActionType.Poi) && categories.includes("poi_highlight" as Category);
-    if (forcePoiAsSkip) {
-        actionTypes.push(ActionType.Poi);
-    }
-
-    try {
-        const segments: DBSegment[] = (await getSegmentsFromDBByVideoID(videoID, service)).map((segment: DBSegment) => {
-            if (filterRequiredSegments(segment.UUID, requiredSegments)) segment.required = true;
-            return segment;
-        }, {});
-
-        const canUseCache = requiredSegments.length === 0;
-        let processedSegments: Segment[] = (await prepareCategorySegments(req, videoID, cid, service, segments, cache, canUseCache))
-            .filter((segment: Segment) => categories.includes(segment?.category) && actionTypes.includes(segment?.actionType))
-            .map((segment: Segment) => ({
-                cid: segment.cid,
-                category: segment.category,
-                actionType: segment.actionType,
-                segment: segment.segment,
-                UUID: segment.UUID,
-                videoDuration: segment.videoDuration,
-                locked: segment.locked,
-                votes: segment.votes,
-                description: segment.description,
-            }));
-
-        if (forcePoiAsSkip) {
-            processedSegments = processedSegments.map((segment) => ({
-                ...segment,
-                actionType: segment.actionType === ActionType.Poi ? ActionType.Skip : segment.actionType,
-            }));
-        }
-
-        return processedSegments;
-    } catch (err) /* istanbul ignore next */ {
-        if (err) {
-            Logger.error(err as string);
-            return null;
-        }
-    }
 }
 
 async function getSegmentsByHash(
@@ -501,4 +447,4 @@ const filterRequiredSegments = (UUID: SegmentUUID, requiredSegments: SegmentUUID
     return false;
 };
 
-export { getSegmentsByHash, getSegmentsByVideoID, getSkipSegments };
+export { getSegmentsByHash, getSkipSegments };
