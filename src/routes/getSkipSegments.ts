@@ -204,7 +204,11 @@ async function getSegmentsByHash(
                 }
 
                 if (data.segments.length > 0) {
-                    segments[videoID] = data;
+                    if (!segments[videoID]?.segments) {
+                        segments[videoID] = data;
+                    } else {
+                        segments[videoID].segments.push(...data.segments);
+                    }
                 }
             })
         );
