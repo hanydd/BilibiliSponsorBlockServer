@@ -4,7 +4,7 @@ import { config } from "../config";
 import { db, privateDB } from "../databases/databases";
 import { ActionType, Category, HashedIP, IncomingSegment, IPAddress, SegmentUUID, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import * as biliID from "../utils/bilibiliID";
+import * as biliID from "../validate/bilibiliID";
 import { checkBanStatus } from "../utils/checkBan";
 import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";

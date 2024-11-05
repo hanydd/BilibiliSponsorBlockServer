@@ -16,7 +16,7 @@ import { HashedValue } from "../types/hash.model";
 import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { average } from "../utils/array";
-import { validate } from "../utils/bilibiliID";
+import { validate } from "../validate/bilibiliID";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getVideoDetails } from "../utils/getVideoDetails";
 import { getYoutubeSegments, getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
