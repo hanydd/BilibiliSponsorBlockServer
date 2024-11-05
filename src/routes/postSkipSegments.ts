@@ -346,7 +346,7 @@ async function checkEachSegmentValid(
     }
 
     if (segments.every((s) => s.ignoreSegment && s.actionType !== ActionType.Full)) {
-        return { pass: false, errorMessage: "Segment has already been submitted before.", errorCode: 409 };
+        return { pass: false, errorMessage: "该片段已经被提交！", errorCode: 409 };
     }
 
     return CHECK_PASS;
