@@ -28,8 +28,6 @@ export class BilibiliAPI {
     }
 
     static async getVideoDetailView(videoID: string): Promise<BilibiliVideoDetailView> {
-        // TODO: validate video id
-
         Logger.info(`Getting video detail from view API: ${videoID}`);
         const url = "https://api.bilibili.com/x/web-interface/view";
         const result = await axios.get(url, { params: { bvid: videoID }, timeout: 3500 });

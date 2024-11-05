@@ -1,7 +1,7 @@
 import { db } from "../databases/databases";
-import { videoDetails } from "../utils/getVideoDetails";
+import { VideoDetail } from "../utils/getVideoDetails";
 
-export async function saveVideoInfo(biliVideoDetail: videoDetails) {
+export async function saveVideoInfo(biliVideoDetail: VideoDetail) {
     await db.prepare(
         "run",
         `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?

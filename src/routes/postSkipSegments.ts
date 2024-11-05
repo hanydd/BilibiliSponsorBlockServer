@@ -11,7 +11,7 @@ import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
-import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
 import { isUserTempVIP } from "../utils/isUserTempVIP";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
@@ -43,7 +43,7 @@ const CHECK_PASS: CheckResult = {
 // Looks like this was broken for no defined youtube key - fixed but IMO we shouldn't return
 //   false for a pass - it was confusing and lead to this bug - any use of this function in
 //   the future could have the same problem.
-async function autoModerateSubmission(apiVideoDetails: videoDetails,
+async function autoModerateSubmission(apiVideoDetails: VideoDetail,
     submission: { videoID: VideoID; userID: HashedUserID; segments: IncomingSegment[], service: Service, videoDuration: number }) {
     // get duration from API
     const apiDuration = apiVideoDetails.duration;
@@ -289,7 +289,7 @@ async function checkEachSegmentValid(rawIP: IPAddress, paramUserID: UserID, user
     return CHECK_PASS;
 }
 
-async function checkByAutoModerator(videoID: VideoID, userID: HashedUserID, segments: IncomingSegment[], service: Service, apiVideoDetails: videoDetails, videoDuration: number): Promise<CheckResult> {
+async function checkByAutoModerator(videoID: VideoID, userID: HashedUserID, segments: IncomingSegment[], service: Service, apiVideoDetails: VideoDetail, videoDuration: number): Promise<CheckResult> {
     // Auto moderator check
     if (service == Service.YouTube) {
         const autoModerateResult = await autoModerateSubmission(apiVideoDetails, { videoID, userID, segments, service, videoDuration });
@@ -321,7 +321,7 @@ async function updateDataIfVideoDurationChange(videoID: VideoID, service: Servic
     const videoDurationChanged = (videoDuration: number) => videoDuration != 0
         && previousSubmissions.length > 0 && !previousSubmissions.some((e) => Math.abs(videoDuration - e.videoDuration) < 2);
 
-    let apiVideoDetails: videoDetails = null;
+    let apiVideoDetails: VideoDetail = null;
     if (service == Service.YouTube) {
         // Don't use cache if we don't know the video duration, or the client claims that it has changed
         const ignoreCache = !videoDurationParam || previousSubmissions.length === 0 || videoDurationChanged(videoDurationParam);

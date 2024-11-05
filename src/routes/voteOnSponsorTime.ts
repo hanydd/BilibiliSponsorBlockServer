@@ -13,7 +13,7 @@ import { HashedUserID, UserID } from "../types/user.model";
 import { DBSegment, Category, HashedIP, IPAddress, SegmentUUID, Service, VideoID, VideoIDHash, VideoDuration, ActionType, VoteType } from "../types/segments.model";
 import { QueryCacher } from "../utils/queryCacher";
 import axios from "axios";
-import { getVideoDetails, videoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
 import { deleteLockCategories } from "./deleteLockCategories";
 import { acquireLock } from "../utils/redisLock";
 import { checkBanStatus } from "../utils/checkBan";
@@ -59,7 +59,7 @@ const videoDurationChanged = (segmentDuration: number, APIDuration: number) => (
 
 async function updateSegmentVideoDuration(UUID: SegmentUUID) {
     const { videoDuration, videoID, service } = await db.prepare("get", `select "videoDuration", "videoID", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
-    let apiVideoDetails: videoDetails = null;
+    let apiVideoDetails: VideoDetail = null;
     if (service == Service.YouTube) {
         // don't use cache since we have no information about the video length
         apiVideoDetails = await getVideoDetails(videoID, true);
@@ -73,7 +73,7 @@ async function updateSegmentVideoDuration(UUID: SegmentUUID) {
 
 async function checkVideoDuration(UUID: SegmentUUID) {
     const { videoID, service } = await db.prepare("get", `select "videoID", "service" from "sponsorTimes" where "UUID" = ?`, [UUID]);
-    let apiVideoDetails: videoDetails = null;
+    let apiVideoDetails: VideoDetail = null;
     if (service == Service.YouTube) {
         // don't use cache since we have no information about the video length
         apiVideoDetails = await getVideoDetails(videoID, true);
