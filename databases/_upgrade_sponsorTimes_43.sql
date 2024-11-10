@@ -14,11 +14,13 @@ CREATE TABLE "sqlb_temp_table_43" (
 	"cid"	    TEXT NOT NULL DEFAULT '',
 	"channelID"	TEXT NOT NULL,
 	"title"	    TEXT NOT NULL,
+	"part"	    INTEGER NOT NULL DEFAULT 0,
+	"partTitile"	TEXT,
 	"published"	NUMERIC NOT NULL,
 	PRIMARY KEY("videoID", "cid")
 );
 
-INSERT INTO sqlb_temp_table_43 SELECT "videoID", '', "channelID", "title", "published" FROM "videoInfo";
+INSERT INTO sqlb_temp_table_43 SELECT "videoID", '', "channelID", "title", 1, '', "published" FROM "videoInfo";
 
 DROP TABLE "videoInfo";
 ALTER TABLE sqlb_temp_table_43 RENAME TO "videoInfo";
