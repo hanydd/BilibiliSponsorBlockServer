@@ -30,7 +30,7 @@ export class BilibiliAPI {
     static async getVideoDetailView(videoID: string): Promise<BilibiliVideoDetailView> {
         Logger.info(`Getting video detail from view API: ${videoID}`);
         const url = "https://api.bilibili.com/x/web-interface/view";
-        const result = await axios.get(url, { params: { bvid: videoID }, timeout: 3500 });
+        const result = await axios.get(url, { params: { bvid: videoID }, timeout: 20000 });
 
         if (result.status === 200 && result.data.code === 0) {
             return result.data.data;
