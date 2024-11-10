@@ -34,6 +34,7 @@ import * as biliID from "../validate/bilibiliID";
 import { validateCid, validatePrivateUserID } from "../validate/validator";
 import { deleteLockCategories } from "./deleteLockCategories";
 import { vote } from "./voteOnSponsorTime";
+import { saveVideoInfo } from "../dao/videoInfo";
 
 type CheckResult = {
     pass: boolean;
@@ -667,13 +668,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
                     [videoID, cid, hashedIP, timeSubmitted, service]
                 );
 
-                await db.prepare(
-                    "run",
-                    `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published")
-                    SELECT ?, ?, ?, ?
-                    WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
-                    [videoID, apiVideoDetails?.authorId || "", apiVideoDetails?.title || "", apiVideoDetails?.published || 0, videoID]
-                );
+                await saveVideoInfo(apiVideoDetails);
 
                 // Clear redis cache for this video
                 QueryCacher.clearSegmentCache({
