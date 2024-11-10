@@ -5,6 +5,9 @@ ALTER TABLE "portVideo" ADD "cid" TEXT NOT NULL DEFAULT '';
 ALTER TABLE "archivedSponsorTimes" ADD "cid" TEXT NOT NULL DEFAULT '';
 ALTER TABLE "lockCategories" ADD "cid" TEXT NOT NULL DEFAULT '';
 
+ALTER TABLE "archivedSponsorTimes" ADD "ytbID" TEXT;
+ALTER TABLE "archivedSponsorTimes" ADD "ytbSegmentUUID" TEXT;
+ALTER TABLE "archivedSponsorTimes" ADD "portUUID" TEXT;
 
 CREATE TABLE "sqlb_temp_table_43" (
 	"videoID"	TEXT NOT NULL,
