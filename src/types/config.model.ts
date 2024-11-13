@@ -49,11 +49,6 @@ export interface SBSConfig {
     adminUserID: string;
     newLeafURLs?: string[];
     youtubeDataApiKey?: string;
-    discordReportChannelWebhookURL?: string;
-    discordFailedReportChannelWebhookURL?: string;
-    discordFirstTimeSubmissionsWebhookURL?: string;
-    discordCompletelyIncorrectReportWebhookURL?: string;
-    discordMaliciousReportWebhookURL?: string;
     neuralBlockURL?: string;
     discordNeuralBlockRejectWebhookURL?: string;
     minReputationToSubmitChapter: number;

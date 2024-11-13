@@ -1,4 +1,3 @@
-import axios from "axios";
 import { Request, Response } from "express";
 import { config } from "../config";
 import { db, privateDB } from "../databases/databases";
@@ -17,7 +16,6 @@ import {
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { checkBanStatus } from "../utils/checkBan";
-import { getFormattedTime } from "../utils/getFormattedTime";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
@@ -26,8 +24,6 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../utils/redisLock";
-import { dispatchEvent, getVoteAuthor, getVoteAuthorRaw } from "../utils/webhookUtils";
-import { getMaxResThumbnail } from "../utils/youtubeApi";
 import { deleteLockCategories } from "./deleteLockCategories";
 
 const voteTypes = {
@@ -46,25 +42,6 @@ interface FinalResponse {
     finalMessage: string;
     webhookType: VoteWebhookType;
     webhookMessage: string;
-}
-
-interface VoteData {
-    UUID: string;
-    nonAnonUserID: string;
-    originalType: VoteType;
-    voteTypeEnum: number;
-    isTempVIP: boolean;
-    isVIP: boolean;
-    isOwnSubmission: boolean;
-    row: {
-        votes: number;
-        views: number;
-        locked: boolean;
-    };
-    category: string;
-    incrementAmount: number;
-    oldIncrementAmount: number;
-    finalResponse: FinalResponse;
 }
 
 const videoDurationChanged = (segmentDuration: number, APIDuration: number) =>
@@ -124,131 +101,6 @@ async function checkVideoDuration(UUID: SegmentUUID) {
             [videoID, service, latestSubmission.timeSubmitted]
         );
         deleteLockCategories(videoID, null, null, service).catch((e) => Logger.error(`delete lock categories after vote: ${e}`));
-    }
-}
-
-async function sendWebhooks(voteData: VoteData) {
-    const submissionInfoRow = await db.prepare(
-        "get",
-        `SELECT "s"."videoID", "s"."userID", s."startTime", s."endTime", s."category", u."userName",
-        (select count(1) from "sponsorTimes" where "userID" = s."userID") count,
-        (select count(1) from "sponsorTimes" where "userID" = s."userID" and votes <= -2) disregarded
-        FROM "sponsorTimes" s left join "userNames" u on s."userID" = u."userID" where s."UUID"=?`,
-        [voteData.UUID]
-    );
-
-    const userSubmissionCountRow = await db.prepare("get", `SELECT count(*) as "submissionCount" FROM "sponsorTimes" WHERE "userID" = ?`, [
-        voteData.nonAnonUserID,
-    ]);
-
-    if (submissionInfoRow !== undefined && userSubmissionCountRow != undefined) {
-        let webhookURL: string = null;
-        if (voteData.originalType === VoteType.Malicious) {
-            webhookURL = config.discordMaliciousReportWebhookURL;
-        } else if (voteData.voteTypeEnum === voteTypes.normal) {
-            switch (voteData.finalResponse.webhookType) {
-                case VoteWebhookType.Normal:
-                    webhookURL = config.discordReportChannelWebhookURL;
-                    break;
-                case VoteWebhookType.Rejected:
-                    webhookURL = config.discordFailedReportChannelWebhookURL;
-                    break;
-            }
-        } else if (voteData.voteTypeEnum === voteTypes.incorrect) {
-            webhookURL = config.discordCompletelyIncorrectReportWebhookURL;
-        }
-
-        const videoID = submissionInfoRow.videoID;
-        const data = await getVideoDetails(videoID);
-
-        const isUpvote = voteData.incrementAmount > 0;
-        // Send custom webhooks
-        dispatchEvent(isUpvote ? "vote.up" : "vote.down", {
-            user: {
-                status: getVoteAuthorRaw(
-                    userSubmissionCountRow.submissionCount,
-                    voteData.isTempVIP,
-                    voteData.isVIP,
-                    voteData.isOwnSubmission
-                ),
-            },
-            video: {
-                id: submissionInfoRow.videoID,
-                title: data?.title,
-                url: `https://www.youtube.com/watch?v=${videoID}`,
-                thumbnail: getMaxResThumbnail(videoID),
-            },
-            submission: {
-                UUID: voteData.UUID,
-                views: voteData.row.views,
-                category: voteData.category,
-                startTime: submissionInfoRow.startTime,
-                endTime: submissionInfoRow.endTime,
-                user: {
-                    UUID: submissionInfoRow.userID,
-                    username: submissionInfoRow.userName,
-                    submissions: {
-                        total: submissionInfoRow.count,
-                        ignored: submissionInfoRow.disregarded,
-                    },
-                },
-            },
-            votes: {
-                before: voteData.row.votes,
-                after: voteData.row.votes + voteData.incrementAmount - voteData.oldIncrementAmount,
-            },
-        });
-
-        // Send discord message
-        if (webhookURL !== null && !isUpvote) {
-            axios
-                .post(webhookURL, {
-                    embeds: [
-                        {
-                            title: data?.title,
-                            url: `https://www.youtube.com/watch?v=${submissionInfoRow.videoID}&t=${
-                                submissionInfoRow.startTime.toFixed(0) - 2
-                            }s#requiredSegment=${voteData.UUID}`,
-                            description: `**${voteData.row.votes} Votes Prior | \
-                        ${voteData.row.votes + voteData.incrementAmount - voteData.oldIncrementAmount} Votes Now | ${voteData.row.views} \
-                        Views**\n\n**Locked**: ${voteData.row.locked}\n\n**Submission ID:** ${voteData.UUID}\
-                        \n**Category:** ${submissionInfoRow.category}\
-                        \n\n**Submitted by:** ${submissionInfoRow.userName}\n${submissionInfoRow.userID}\
-                        \n\n**Total User Submissions:** ${submissionInfoRow.count}\
-                        \n**Ignored User Submissions:** ${submissionInfoRow.disregarded}\
-                        \n\n**Timestamp:** \
-                        ${getFormattedTime(submissionInfoRow.startTime)} to ${getFormattedTime(submissionInfoRow.endTime)}`,
-                            color: 10813440,
-                            author: {
-                                name:
-                                    voteData.finalResponse?.webhookMessage ??
-                                    voteData.finalResponse?.finalMessage ??
-                                    `${getVoteAuthor(
-                                        userSubmissionCountRow.submissionCount,
-                                        voteData.isTempVIP,
-                                        voteData.isVIP,
-                                        voteData.isOwnSubmission
-                                    )}${voteData.row.locked ? " (Locked)" : ""}`,
-                            },
-                            thumbnail: {
-                                url: getMaxResThumbnail(videoID),
-                            },
-                        },
-                    ],
-                })
-                .then((res) => {
-                    if (res.status >= 400) {
-                        Logger.error("Error sending reported submission Discord hook");
-                        Logger.error(JSON.stringify(res.data));
-                        Logger.error("\n");
-                    }
-                })
-                .catch((err) => {
-                    Logger.error("Failed to send reported submission Discord hook.");
-                    Logger.error(JSON.stringify(err));
-                    Logger.error("\n");
-                });
-        }
     }
 }
 
@@ -700,22 +552,6 @@ export async function vote(
             }
 
             QueryCacher.clearSegmentCache(segmentInfo);
-        }
-        if (incrementAmount - oldIncrementAmount !== 0) {
-            sendWebhooks({
-                UUID,
-                nonAnonUserID,
-                originalType,
-                voteTypeEnum,
-                isTempVIP,
-                isVIP,
-                isOwnSubmission,
-                row: segmentInfo,
-                category,
-                incrementAmount,
-                oldIncrementAmount,
-                finalResponse,
-            }).catch((e) => Logger.error(`Sending vote webhook: ${e}`));
         }
 
         lock.unlock();
