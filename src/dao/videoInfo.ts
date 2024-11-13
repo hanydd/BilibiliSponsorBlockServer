@@ -1,17 +1,23 @@
 import { db } from "../databases/databases";
-import { videoDetails } from "../utils/getVideoDetails";
+import { VideoDetail } from "../utils/getVideoDetails";
 
-export async function saveVideoInfo(biliVideoDetail: videoDetails) {
-    await db.prepare(
-        "run",
-        `INSERT INTO "videoInfo" ("videoID", "channelID", "title", "published") SELECT ?, ?, ?, ?
-        WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ?)`,
-        [
-            biliVideoDetail.videoId,
-            biliVideoDetail?.authorId || "",
-            biliVideoDetail?.title || "",
-            biliVideoDetail?.published || 0,
-            biliVideoDetail.videoId,
-        ]
-    );
+export async function saveVideoInfo(biliVideoDetail: VideoDetail) {
+    for (const page of biliVideoDetail.page) {
+        await db.prepare(
+            "run",
+            `INSERT INTO "videoInfo" ("videoID", "cid", "channelID", "title", "part", "partTitile", "published") SELECT ?, ?, ?, ?, ?, ?, ?
+            WHERE NOT EXISTS (SELECT 1 FROM "videoInfo" WHERE "videoID" = ? AND "cid" = ?)`,
+            [
+                biliVideoDetail.videoId,
+                page.cid,
+                biliVideoDetail?.authorId || "",
+                biliVideoDetail?.title || "",
+                page?.page || 0,
+                page?.part || "",
+                biliVideoDetail?.published || 0,
+                biliVideoDetail.videoId,
+                page.cid,
+            ]
+        );
+    }
 }

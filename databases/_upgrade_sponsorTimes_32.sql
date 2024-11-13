@@ -12,7 +12,6 @@ ALTER TABLE "shadowBannedUsers" ADD PRIMARY KEY ("userID"); --!sqlite-ignore
 ALTER TABLE "unlistedVideos" ADD "id" SERIAL PRIMARY KEY; --!sqlite-ignore
 ALTER TABLE "config" ADD PRIMARY KEY ("key"); --!sqlite-ignore
 ALTER TABLE "archivedSponsorTimes" ADD PRIMARY KEY ("UUID"); --!sqlite-ignore
-ALTER TABLE "ratings" ADD "id" SERIAL PRIMARY KEY; --!sqlite-ignore
 
 UPDATE "config" SET value = 32 WHERE key = 'version';
 

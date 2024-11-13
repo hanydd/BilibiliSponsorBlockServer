@@ -46,7 +46,17 @@ export interface IncomingSegment {
     ignoreSegment?: boolean;
 }
 
+export interface VideoLabel {
+    cid: string;
+    category: Category;
+    UUID: SegmentUUID;
+    videoDuration: VideoDuration;
+    locked: boolean;
+    votes: number;
+}
+
 export interface Segment {
+    cid: string;
     category: Category;
     actionType: ActionType;
     segment: number[];
@@ -65,6 +75,7 @@ export enum Visibility {
 
 export interface DBSegment {
     videoID: VideoID;
+    cid: string;
     startTime: number;
     endTime: number;
 
@@ -110,6 +121,10 @@ export interface VotableObject {
 
 export interface VotableObjectWithWeight extends VotableObject {
     weight: number;
+}
+
+export interface VideoLabelData {
+    segments: VideoLabel[];
 }
 
 export interface VideoData {

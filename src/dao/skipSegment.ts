@@ -1,36 +1,23 @@
 import { db, privateDB } from "../databases/databases";
 import { PORT_SEGMENT_USER_ID } from "../routes/postPortVideo";
 import { portVideoUUID } from "../types/portVideo.model";
-import {
-    DBSegment,
-    HashedIP,
-    HiddenType,
-    Segment,
-    SegmentUUID,
-    Service,
-    VideoID,
-    VideoIDHash,
-    Visibility,
-} from "../types/segments.model";
+import { DBSegment, HashedIP, HiddenType, Segment, SegmentUUID, Service, VideoID, VideoIDHash, Visibility } from "../types/segments.model";
 import { getHash } from "../utils/getHash";
 import { getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { QueryCacher } from "../utils/queryCacher";
-import { skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
+import { cidListKey, skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
 
-export async function getSegmentsFromDBByHash(
-    hashedVideoIDPrefix: VideoIDHash,
-    service: Service
-): Promise<DBSegment[]> {
+export async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
     const fetchFromDB = () =>
         db.prepare(
             "all",
-            `SELECT "videoID", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
+            `SELECT "videoID", "cid", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "hashedVideoID", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
             WHERE "hashedVideoID" LIKE ? AND "service" = ? ORDER BY "startTime"`,
             [`${hashedVideoIDPrefix}%`, service],
             { useReplica: true }
         ) as Promise<DBSegment[]>;
 
-    if (hashedVideoIDPrefix.length === 4) {
+    if (hashedVideoIDPrefix.length >= 4) {
         return await QueryCacher.get(fetchFromDB, skipSegmentsHashKey(hashedVideoIDPrefix, service));
     }
 
@@ -41,7 +28,7 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
     const fetchFromDB = () =>
         db.prepare(
             "all",
-            `SELECT "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
+            `SELECT "cid", "startTime", "endTime", "votes", "locked", "UUID", "userID", "category", "actionType", "videoDuration", "hidden", "reputation", "shadowHidden", "timeSubmitted", "description", "ytbID", "ytbSegmentUUID", "portUUID" FROM "sponsorTimes"
             WHERE "videoID" = ? AND "service" = ? ORDER BY "startTime"`,
             [videoID, service],
             { useReplica: true }
@@ -54,19 +41,14 @@ export async function getSegmentsFromDBByVideoID(videoID: VideoID, service: Serv
  * hide segments by UUID from the same video,
  * provide the video id to clear redis cache
  */
-export async function hideSegmentsByUUID(
-    UUIDs: string[],
-    bvID: VideoID,
-    hiddenType = HiddenType.MismatchHidden
-): Promise<void> {
+export async function hideSegmentsByUUID(UUIDs: string[], bvID: VideoID, hiddenType = HiddenType.MismatchHidden): Promise<void> {
     if (UUIDs.length === 0) {
         return;
     }
-    await db.prepare(
-        "run",
-        `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`,
-        [hiddenType, ...UUIDs]
-    );
+    await db.prepare("run", `UPDATE "sponsorTimes" SET "hidden" = ? WHERE "UUID" IN (${Array(UUIDs.length).fill("?").join(",")})`, [
+        hiddenType,
+        ...UUIDs,
+    ]);
     QueryCacher.clearSegmentCacheByID(bvID);
 }
 
@@ -191,4 +173,11 @@ export async function updateVotes(segments: DBSegment[]): Promise<void> {
     // clear redis cache
     const videoIDSet = new Set(segments.map((s) => s.videoID));
     videoIDSet.forEach((videoID) => QueryCacher.clearSegmentCacheByID(videoID));
+}
+
+export async function getAllCid(videoID: VideoID): Promise<string[]> {
+    const fetchData = async (videoID: VideoID) => {
+        return await db.prepare("all", `SELECT DISTINCT cid FROM "sponsorTimes" WHERE "videoID" =?`, [videoID]);
+    };
+    return await QueryCacher.get(() => fetchData(videoID), cidListKey(videoID));
 }
