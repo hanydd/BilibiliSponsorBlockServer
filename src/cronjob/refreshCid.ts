@@ -26,9 +26,17 @@ async function refreshCid() {
         }
         videoSegmentMap.get(segment.videoID)?.push(segment);
     }
-    Logger.info(`Found ${videoSegmentMap.size} videos with missing cids`);
+    const sortedVideoSegmentMap = new Map(
+        Array.from(videoSegmentMap.entries()).sort(([, aSegments], [, bSegments]) => {
+            const aViews = aSegments.reduce((sum, segment) => sum + segment.views, 0);
+            const bViews = bSegments.reduce((sum, segment) => sum + segment.views, 0);
+            return bViews - aViews;
+        })
+    );
 
-    for (const [videoID, segments] of videoSegmentMap) {
+    Logger.info(`Found ${sortedVideoSegmentMap.size} videos with missing cids`);
+
+    for (const [videoID, segments] of sortedVideoSegmentMap) {
         let biliVideoDetail: VideoDetail;
         try {
             biliVideoDetail = await getVideoDetails(videoID);
