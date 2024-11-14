@@ -33,7 +33,11 @@ async function get<T>(fetchFromDB: () => Promise<T>, key: string, ttl = 0): Prom
 
     const data = await fetchFromDB();
 
-    redis.setExWithCache(key, ttl || config.redis?.expiryTime, JSON.stringify(data)).catch((err) => Logger.error(err));
+    if (ttl >= 0) {
+        redis.setExWithCache(key, ttl || config.redis?.expiryTime, JSON.stringify(data)).catch((err) => Logger.error(err));
+    } else {
+        redis.setWithCache(key, JSON.stringify(data)).catch((err) => Logger.error(err));
+    }
 
     return data;
 }
@@ -110,9 +114,7 @@ async function getAndSplit<T, U extends string>(
         })
     );
 
-    const valuesToBeFetched = cachedValues
-        .filter((cachedValue) => cachedValue.result === null)
-        .map((cachedValue) => cachedValue.value);
+    const valuesToBeFetched = cachedValues.filter((cachedValue) => cachedValue.result === null).map((cachedValue) => cachedValue.value);
 
     let data: Array<T> = [];
     if (valuesToBeFetched.length > 0) {
@@ -133,16 +135,12 @@ async function getAndSplit<T, U extends string>(
             }
 
             for (const key in newResults) {
-                redis
-                    .setEx(key, config.redis?.expiryTime, JSON.stringify(newResults[key]))
-                    .catch((err) => Logger.error(err));
+                redis.setEx(key, config.redis?.expiryTime, JSON.stringify(newResults[key])).catch((err) => Logger.error(err));
             }
         });
     }
 
-    return data.concat(
-        ...(cachedValues.map((cachedValue) => cachedValue.result).filter((result) => result !== null) || [])
-    );
+    return data.concat(...(cachedValues.map((cachedValue) => cachedValue.result).filter((result) => result !== null) || []));
 }
 
 function clearKey(key: string): void {
@@ -153,12 +151,7 @@ function clearKeyPattern(keyPattern: string): void {
     redis.delPattern(keyPattern).catch((err) => Logger.error(err));
 }
 
-function clearSegmentCache(videoInfo: {
-    videoID: VideoID;
-    hashedVideoID: VideoIDHash;
-    service: Service;
-    userID?: UserID;
-}): void {
+function clearSegmentCache(videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service; userID?: UserID }): void {
     if (videoInfo) {
         redis.del(skipSegmentsKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
         clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, "*", videoInfo.service));
@@ -166,7 +159,6 @@ function clearSegmentCache(videoInfo: {
         redis.del(videoLabelsKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         if (videoInfo.userID) redis.del(reputationKey(videoInfo.userID)).catch((err) => Logger.error(err));
-
     }
 }
 

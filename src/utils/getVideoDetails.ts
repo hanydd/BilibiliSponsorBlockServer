@@ -42,7 +42,7 @@ export function getVideoDetails(videoId: string, ignoreCache = false): Promise<V
     }
 
     try {
-        return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId), 365 * 24 * 60 * 60);
+        return QueryCacher.get(() => getVideoDetailsFromAPI(videoId), videoDetailCacheKey(videoId), -1);
     } catch (e: any) {
         Logger.error(e.message);
         return null;
