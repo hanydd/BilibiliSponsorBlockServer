@@ -39,6 +39,7 @@ async function refreshCid() {
     for (const [videoID, segments] of sortedVideoSegmentMap) {
         let biliVideoDetail: VideoDetail;
         try {
+            await sleep(5000);
             biliVideoDetail = await getVideoDetails(videoID);
             if (biliVideoDetail === null || biliVideoDetail === undefined) {
                 Logger.error(`Failed to get video detail for ${videoID}`);
@@ -79,7 +80,6 @@ async function refreshCid() {
             ]);
         }
 
-        await sleep(5000);
     }
 
     isRunning = false;
