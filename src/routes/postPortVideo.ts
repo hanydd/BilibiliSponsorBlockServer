@@ -66,11 +66,10 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // get default cid
     if (!cid) {
-        const pageDetail = biliVideoDetail.page.filter((p) => p.cid == cid);
-        if (pageDetail.length == 0) {
-            return res.status(400).send("分p视频无法获取cid，请使用0.5.0以上版本的插件！");
+        if (biliVideoDetail.page.length == 0 || biliVideoDetail.page.length > 1) {
+            return res.status(400).send("插件暂时不支持绑定分P视频！");
         }
-        cid = pageDetail[0].cid;
+        cid = biliVideoDetail.page[0].cid;
     }
 
     // get ytb video duration
