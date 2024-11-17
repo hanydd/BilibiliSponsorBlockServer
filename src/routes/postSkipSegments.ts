@@ -68,7 +68,7 @@ async function autoModerateSubmission(
     // check if cid exist
     const pageDetail = apiVideoDetails.page.filter((p) => p.cid === submission.cid);
     if (!submission.cid) {
-        return "分p视频无法获取cid，请使用0.5.0以上版本的插件！";
+        return "目前插件暂不支持分P视频！";
     }
     if (pageDetail.length == 0) {
         return "分P视频cid错误";
