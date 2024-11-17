@@ -7,7 +7,7 @@ import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
 import { Logger } from "../utils/logger";
 import { sleep } from "../utils/timeUtil";
 
-export const refreshCidJob = new CronJob("*/1 * * * *", () => refreshCid());
+export const refreshCidJob = new CronJob("0 5 * * *", () => refreshCid());
 
 let isRunning = false;
 
