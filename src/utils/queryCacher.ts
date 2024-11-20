@@ -160,7 +160,11 @@ function clearSegmentCache(videoInfo: {
 }): void {
     if (videoInfo) {
         redis.del(skipSegmentsKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
-        clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, videoInfo.cid ? videoInfo.cid : "*", videoInfo.service));
+        if (!videoInfo.cid || videoInfo.cid == "*") {
+            clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, "*", videoInfo.service));
+        } else {
+            redis.del(skipSegmentGroupsKey(videoInfo.videoID, videoInfo.cid, videoInfo.service)).catch((err) => Logger.error(err));
+        }
         redis.del(skipSegmentsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
