@@ -233,6 +233,7 @@ async function checkEachSegmentValid(
     paramUserID: UserID,
     userID: HashedUserID,
     videoID: VideoID,
+    cid: string,
     segments: IncomingSegment[],
     service: Service,
     isVIP: boolean,
@@ -570,6 +571,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
             paramUserID,
             userID,
             videoID,
+            cid,
             segments,
             service,
             isVIP,
@@ -622,6 +624,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
             //also better for duplication checking
             const UUID = getSubmissionUUID(
                 videoID,
+                cid,
                 segmentInfo.category,
                 segmentInfo.actionType,
                 segmentInfo.description,
@@ -674,6 +677,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
                 // Clear redis cache for this video
                 QueryCacher.clearSegmentCache({
                     videoID,
+                    cid,
                     hashedVideoID,
                     service,
                     userID,

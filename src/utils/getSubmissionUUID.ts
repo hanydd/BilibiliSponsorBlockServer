@@ -5,6 +5,7 @@ import { HashedUserID } from "../types/user.model";
 
 export function getSubmissionUUID(
     videoID: VideoID,
+    cid: string,
     category: Category,
     actionType: ActionType,
     description: string,
@@ -13,7 +14,7 @@ export function getSubmissionUUID(
     endTime: number,
     service: Service
 ) : HashedValue {
-    return `${getHash(`${videoID}${startTime}${endTime}${userID}${description}${category}${actionType}${service}`, 1)}7` as HashedValue;
+    return `${getHash(`${videoID}${cid}${startTime}${endTime}${userID}${description}${category}${actionType}${service}`, 1)}7` as HashedValue;
 }
 
 export function getMatchVideoUUID(
