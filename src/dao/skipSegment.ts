@@ -55,6 +55,7 @@ export async function hideSegmentsByUUID(UUIDs: string[], bvID: VideoID, hiddenT
 export function createSegmentsFromYTB(
     ytbSegments: Segment[],
     bvID: VideoID,
+    cid: string,
     ytbID: VideoID,
     timeSubmitted: number,
     reputation: number,
@@ -65,6 +66,7 @@ export function createSegmentsFromYTB(
     const newSegments: DBSegment[] = ytbSegments.map((ytbSegment) => {
         return {
             videoID: bvID,
+            cid: cid,
             startTime: ytbSegment.segment[0],
             endTime: ytbSegment.segment[1],
 
@@ -110,6 +112,7 @@ export async function saveNewSegments(segments: DBSegment[], hashedIP: HashedIP 
     for (const s of segments) {
         sponsorTime.push([
             s.videoID,
+            s. cid,
             s.startTime,
             s.endTime,
             s.votes,
@@ -132,20 +135,20 @@ export async function saveNewSegments(segments: DBSegment[], hashedIP: HashedIP 
             s.portUUID,
         ]);
 
-        privateSponsorTime.push([s.videoID, hashedIP, s.timeSubmitted, s.service]);
+        privateSponsorTime.push([s.videoID, s.cid, hashedIP, s.timeSubmitted, s.service]);
     }
     await db.prepare(
         "run",
-        `INSERT INTO "sponsorTimes" ("videoID", "startTime", "endTime", "votes", "locked", "UUID",
+        `INSERT INTO "sponsorTimes" ("videoID", "cid", "startTime", "endTime", "votes", "locked", "UUID",
         "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation",
         "shadowHidden", "hashedVideoID", "userAgent", "description", "ytbID", "ytbSegmentUUID", "portUUID")
-        VALUES ${Array(sponsorTime.length).fill("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").join(",")}`,
+        VALUES ${Array(sponsorTime.length).fill("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").join(",")}`,
         sponsorTime.flat()
     );
     await privateDB.prepare(
         "run",
-        `INSERT INTO "sponsorTimes" ("videoID", "hashedIP", "timeSubmitted", "service")
-        VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
+        `INSERT INTO "sponsorTimes" ("videoID", "cid", "hashedIP", "timeSubmitted", "service")
+        VALUES ${Array(privateSponsorTime.length).fill("(?,?,?,?,?)").join(",")}`,
         privateSponsorTime.flat()
     );
 

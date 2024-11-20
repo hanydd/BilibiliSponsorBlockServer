@@ -256,6 +256,7 @@ async function checkEachSegmentValid(
         if (!isVIP && lockIndex !== -1) {
             QueryCacher.clearSegmentCache({
                 videoID,
+                cid,
                 hashedVideoID: await getHashCache(videoID, 1),
                 service,
                 userID,

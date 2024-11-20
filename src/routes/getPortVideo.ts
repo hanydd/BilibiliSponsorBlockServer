@@ -119,6 +119,7 @@ export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
     const saveSegment: DBSegment[] = createSegmentsFromYTB(
         newSegments,
         bvID,
+        cid,
         ytbID,
         timeSubmitted,
         0, // PORT segment does not have reputation

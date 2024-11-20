@@ -151,10 +151,16 @@ function clearKeyPattern(keyPattern: string): void {
     redis.delPattern(keyPattern).catch((err) => Logger.error(err));
 }
 
-function clearSegmentCache(videoInfo: { videoID: VideoID; hashedVideoID: VideoIDHash; service: Service; userID?: UserID }): void {
+function clearSegmentCache(videoInfo: {
+    videoID: VideoID;
+    cid?: string;
+    hashedVideoID: VideoIDHash;
+    service: Service;
+    userID?: UserID;
+}): void {
     if (videoInfo) {
         redis.del(skipSegmentsKey(videoInfo.videoID, videoInfo.service)).catch((err) => Logger.error(err));
-        clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, "*", videoInfo.service));
+        clearKeyPattern(skipSegmentGroupsKey(videoInfo.videoID, videoInfo.cid ? videoInfo.cid : "*", videoInfo.service));
         redis.del(skipSegmentsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
         redis.del(videoLabelsHashKey(videoInfo.hashedVideoID, videoInfo.service)).catch((err) => Logger.error(err));
@@ -162,9 +168,9 @@ function clearSegmentCache(videoInfo: { videoID: VideoID; hashedVideoID: VideoID
     }
 }
 
-function clearSegmentCacheByID(videoID: VideoID): void {
+function clearSegmentCacheByID(videoID: VideoID, cid?: string): void {
     if (videoID) {
-        clearSegmentCache({ videoID: videoID, hashedVideoID: getHash(videoID, 1), service: Service.YouTube });
+        clearSegmentCache({ videoID: videoID, cid, hashedVideoID: getHash(videoID, 1), service: Service.YouTube });
     }
 }
 
