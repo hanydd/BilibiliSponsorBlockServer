@@ -53,7 +53,6 @@ import { verifyTokenRequest } from "./routes/verifyToken";
 import { viewedVideoSponsorTime } from "./routes/viewedVideoSponsorTime";
 import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 import { getUserID as voteGetUserID, voteOnSponsorTime } from "./routes/voteOnSponsorTime";
-import { youtubeApiProxy } from "./routes/youtubeApiProxy";
 
 export function createServer(callback: () => void): Server {
     // Create a service (the app object is just a callback).
@@ -195,7 +194,6 @@ function setupRoutes(router: Router, server: Server) {
 
     router.get("/api/ready", (req, res) => getReady(req, res, server));
 
-    router.get("/api/youtubeApiProxy", youtubeApiProxy);
     // get user category stats
     router.get("/api/userStats", getUserStats);
 
