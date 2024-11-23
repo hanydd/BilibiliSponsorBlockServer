@@ -22,7 +22,7 @@ import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
-import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { isUserTempVIP } from "../service/VIPUserService";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";

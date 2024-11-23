@@ -9,7 +9,6 @@ import * as biliID from "../validate/bilibiliID";
 import { getVideoDetails } from "../utils/getVideoDetails";
 import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { getMatchVideoUUID, getPortSegmentUUID } from "../utils/getSubmissionUUID";
-import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { average } from "../utils/array";
@@ -23,6 +22,7 @@ import { acquireLock } from "../service/redis/redisLock";
 import { vote as votePortVideo } from "./voteOnPortVideo";
 import { saveVideoInfo } from "../dao/videoInfo";
 import { YouTubeAPI } from "../service/api/youtubeApi";
+import { isUserVIP } from "../service/VIPUserService";
 
 type CheckResult = {
     pass: boolean;

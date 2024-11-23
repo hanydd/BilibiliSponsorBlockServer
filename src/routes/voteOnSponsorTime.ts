@@ -19,7 +19,7 @@ import { checkBanStatus } from "../service/checkBan";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
-import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { isUserTempVIP } from "../service/VIPUserService";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";

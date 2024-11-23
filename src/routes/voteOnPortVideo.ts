@@ -8,7 +8,7 @@ import { validate } from "../validate/bilibiliID";
 import { getHash } from "../utils/getHash";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
-import { isUserTempVIP } from "../utils/isUserTempVIP";
+import { isUserTempVIP } from "../service/VIPUserService";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
