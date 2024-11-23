@@ -27,7 +27,7 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";
 import { QueryCacher } from "../utils/queryCacher";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../service/redis/redisLock";
 import { getReputation } from "../utils/reputation";
 import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import * as biliID from "../validate/bilibiliID";

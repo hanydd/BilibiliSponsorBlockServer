@@ -5,7 +5,7 @@ import { DBSegment, HashedIP, HiddenType, Segment, SegmentUUID, Service, VideoID
 import { getHash } from "../utils/getHash";
 import { getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { QueryCacher } from "../utils/queryCacher";
-import { cidListKey, skipSegmentsHashKey, skipSegmentsKey } from "../utils/redisKeys";
+import { cidListKey, skipSegmentsHashKey, skipSegmentsKey } from "../service/redis/redisKeys";
 
 export async function getSegmentsFromDBByHash(hashedVideoIDPrefix: VideoIDHash, service: Service): Promise<DBSegment[]> {
     const fetchFromDB = () =>

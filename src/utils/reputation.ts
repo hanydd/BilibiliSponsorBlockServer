@@ -1,7 +1,7 @@
 import { db } from "../databases/databases";
 import { UserID } from "../types/user.model";
 import { QueryCacher } from "./queryCacher";
-import { reputationKey } from "./redisKeys";
+import { reputationKey } from "../service/redis/redisKeys";
 
 interface ReputationDBResult {
     totalSubmissions: number,
@@ -23,8 +23,8 @@ export async function getReputation(userID: UserID): Promise<number> {
     const fetchFromDB = () => db.prepare("get",
         `SELECT COUNT(*) AS "totalSubmissions",
             SUM(CASE WHEN "votes" < 0 AND "views" > 5 THEN 1 ELSE 0 END) AS "downvotedSubmissions",
-            SUM(CASE WHEN "votes" < 0 AND "views" > 5 AND "videoID" NOT IN 
-                (SELECT b."videoID" FROM "sponsorTimes" as b 
+            SUM(CASE WHEN "votes" < 0 AND "views" > 5 AND "videoID" NOT IN
+                (SELECT b."videoID" FROM "sponsorTimes" as b
                     WHERE b."userID" = ?
                         AND b."votes" > 0 AND b."category" = "a"."category" AND b."videoID" = "a"."videoID" LIMIT 1)
                 THEN 1 ELSE 0 END) AS "nonSelfDownvotedSubmissions",
@@ -34,12 +34,12 @@ export async function getReputation(userID: UserID): Promise<number> {
             SUM(CASE WHEN "timeSubmitted" < ? AND "timeSubmitted" > 1596240000000 AND "votes" > 0 THEN 1 ELSE 0 END) AS "oldUpvotedSubmissions",
             SUM(CASE WHEN "votes" > 0
                 AND EXISTS (
-                    SELECT * FROM "lockCategories" as l 
+                    SELECT * FROM "lockCategories" as l
                     WHERE l."videoID" = "a"."videoID" AND l."service" = "a"."service" AND l."category" = "a"."category" LIMIT 1)
                 AND ("locked" > 0 OR NOT EXISTS (
-                    SELECT * FROM "sponsorTimes" as c 
-                    WHERE (c."votes" > "a"."votes" OR  c."locked" > "a"."locked") AND 
-                        c."videoID" = "a"."videoID" AND 
+                    SELECT * FROM "sponsorTimes" as c
+                    WHERE (c."votes" > "a"."votes" OR  c."locked" > "a"."locked") AND
+                        c."videoID" = "a"."videoID" AND
                         c."category" = "a"."category" LIMIT 1) )
                 THEN 1 ELSE 0 END) AS "mostUpvotedInLockedVideoSum"
         FROM "sponsorTimes" as "a" WHERE "userID" = ? AND "actionType" != 'full'`, [userID, weekAgo, pastDate, userID], { useReplica: true }) as Promise<ReputationDBResult>;

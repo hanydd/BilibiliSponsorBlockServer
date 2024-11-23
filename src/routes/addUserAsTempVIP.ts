@@ -5,8 +5,8 @@ import { privateDB } from "../databases/databases";
 import { Request, Response } from "express";
 import { isUserVIP } from "../utils/isUserVIP";
 import { HashedUserID } from "../types/user.model";
-import redis from "../utils/redis";
-import { tempVIPKey } from "../utils/redisKeys";
+import redis from "../service/redis/redis";
+import { tempVIPKey } from "../service/redis/redisKeys";
 import { Logger } from "../utils/logger";
 
 interface AddUserAsTempVIPRequest extends Request {

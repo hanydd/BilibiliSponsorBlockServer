@@ -3,7 +3,7 @@ import { config } from "../config";
 import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
-import { getTopUserKey } from "../utils/redisKeys";
+import { getTopUserKey } from "../service/redis/redisKeys";
 
 export const SORT_TYPE_MAP: { [key: number]: string } = {
     0: "minutesSaved",

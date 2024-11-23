@@ -1,7 +1,7 @@
-import { Service, VideoID, VideoIDHash } from "../types/segments.model";
-import { Feature, HashedUserID, UserID } from "../types/user.model";
-import { HashedValue } from "../types/hash.model";
-import { Logger } from "./logger";
+import { Service, VideoID, VideoIDHash } from "../../types/segments.model";
+import { Feature, HashedUserID, UserID } from "../../types/user.model";
+import { HashedValue } from "../../types/hash.model";
+import { Logger } from "../../utils/logger";
 import { RedisCommandArgument } from "@redis/client/dist/lib/commands";
 
 export function skipSegmentsKey(videoID: VideoID, service: Service): string {

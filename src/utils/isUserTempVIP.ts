@@ -1,5 +1,5 @@
-import redis from "../utils/redis";
-import { tempVIPKey } from "../utils/redisKeys";
+import redis from "../service/redis/redis";
+import { tempVIPKey } from "../service/redis/redisKeys";
 import { HashedUserID } from "../types/user.model";
 import { VideoID } from "../types/segments.model";
 import { Logger } from "./logger";

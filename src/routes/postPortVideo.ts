@@ -19,7 +19,7 @@ import { getHash } from "../utils/getHash";
 import { getReputation } from "../utils/reputation";
 import { getIP } from "../utils/getIP";
 import { QueryCacher } from "../utils/queryCacher";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../service/redis/redisLock";
 import { vote as votePortVideo } from "./voteOnPortVideo";
 import { saveVideoInfo } from "../dao/videoInfo";
 import { YouTubeAPI } from "../service/api/youtubeApi";

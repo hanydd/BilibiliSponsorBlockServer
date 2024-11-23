@@ -2,7 +2,7 @@ import { db, privateDB } from "../databases/databases";
 import { Logger } from "../utils/logger";
 import { Request, Response } from "express";
 import os from "os";
-import redis, { getRedisStats } from "../utils/redis";
+import redis, { getRedisStats } from "../service/redis/redis";
 import { promiseOrTimeout } from "../utils/promise";
 import { Postgres } from "../databases/Postgres";
 import { Server } from "http";

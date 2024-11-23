@@ -1,5 +1,5 @@
-import redis from "../utils/redis";
-import { shaHashKey } from "../utils/redisKeys";
+import redis from "../service/redis/redis";
+import { shaHashKey } from "../service/redis/redisKeys";
 import { HashedValue } from "../types/hash.model";
 import { Logger } from "../utils/logger";
 import { getHash } from "../utils/getHash";

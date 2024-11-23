@@ -1,38 +1,40 @@
-import { config } from "../config";
-import redis from "../utils/redis";
-import { Logger } from "./logger";
+import { config } from "../../config";
+import { Logger } from "../../utils/logger";
+import redis from "./redis";
 
 const defaultTimeout = 20000;
 
-export type AcquiredLock = {
-    status: false
-} | {
-    status: true;
-    unlock: () => void;
-};
+export type AcquiredLock =
+    | {
+          status: false;
+      }
+    | {
+          status: true;
+          unlock: () => void;
+      };
 
 export async function acquireLock(key: string, timeout = defaultTimeout): Promise<AcquiredLock> {
     if (!config.redis?.enabled) {
         return {
             status: true,
-            unlock: () => void 0
+            unlock: () => void 0,
         };
     }
 
     try {
         const result = await redis.set(key, "1", {
             PX: timeout,
-            NX: true
+            NX: true,
         });
 
         if (result) {
             return {
                 status: true,
-                unlock: () => void redis.del(key).catch((err) => Logger.error(err))
+                unlock: () => void redis.del(key).catch((err) => Logger.error(err)),
             };
         } else {
             return {
-                status: false
+                status: false,
             };
         }
     } catch (e) {
@@ -41,12 +43,12 @@ export async function acquireLock(key: string, timeout = defaultTimeout): Promis
         // Fallback to allowing
         return {
             status: true,
-            unlock: () => void 0
+            unlock: () => void 0,
         };
     }
 
     return {
-        status: false
+        status: false,
     };
 }
 

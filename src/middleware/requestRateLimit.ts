@@ -7,7 +7,7 @@ import { Request, RequestHandler } from "express";
 import { isUserVIP } from "../utils/isUserVIP";
 import { UserID } from "../types/user.model";
 import RedisStore, { RedisReply } from "rate-limit-redis";
-import redis from "../utils/redis";
+import redis from "../service/redis/redis";
 import { config } from "../config";
 import { Logger } from "../utils/logger";
 

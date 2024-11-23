@@ -2,7 +2,7 @@ import { config } from "../config";
 import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { Feature, HashedUserID, UserID } from "../types/user.model";
 import { Logger } from "../utils/logger";
-import redis, { TooManyActiveConnectionsError } from "../utils/redis";
+import redis, { TooManyActiveConnectionsError } from "../service/redis/redis";
 import { getHash } from "./getHash";
 import {
     portVideoByHashCacheKey,
@@ -15,7 +15,7 @@ import {
     userFeatureKey,
     videoLabelsHashKey,
     videoLabelsKey,
-} from "./redisKeys";
+} from "../service/redis/redisKeys";
 
 async function get<T>(fetchFromDB: () => Promise<T>, key: string, ttl = 0): Promise<T> {
     try {

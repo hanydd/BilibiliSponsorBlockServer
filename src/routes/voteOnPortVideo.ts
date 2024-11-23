@@ -12,7 +12,7 @@ import { isUserTempVIP } from "../utils/isUserTempVIP";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../service/redis/redisLock";
 
 export async function voteOnPortVideo(req: Request, res: Response): Promise<Response> {
     const UUID = req.body.UUID as portVideoUUID;

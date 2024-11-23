@@ -5,7 +5,7 @@ import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
 import { validateCategories } from "../utils/parseParams";
 import { QueryCacher } from "../utils/queryCacher";
-import { getTopCategoryUserKey } from "../utils/redisKeys";
+import { getTopCategoryUserKey } from "../service/redis/redisKeys";
 import { SORT_TYPE_MAP } from "./getTopUsers";
 
 /* istanbul ignore next */

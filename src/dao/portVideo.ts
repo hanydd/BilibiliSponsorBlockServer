@@ -3,7 +3,7 @@ import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface } from "../t
 import { HiddenType, VideoID } from "../types/segments.model";
 import { getHash } from "../utils/getHash";
 import { QueryCacher } from "../utils/queryCacher";
-import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../utils/redisKeys";
+import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../service/redis/redisKeys";
 
 function getPortVideoDBByBvID(bvID: VideoID, downvoteThreshold = -2): Promise<PortVideoDB[]> {
     return db.prepare(

@@ -5,10 +5,10 @@ import { LRUCache } from "lru-cache";
 import { compress, uncompress } from "lz4-napi";
 import { RedisReply } from "rate-limit-redis";
 import { RedisClientType, SetOptions, createClient } from "redis";
-import { config } from "../config";
-import { db } from "../databases/databases";
-import { Postgres } from "../databases/Postgres";
-import { Logger } from "./logger";
+import { config } from "../../config";
+import { db } from "../../databases/databases";
+import { Postgres } from "../../databases/Postgres";
+import { Logger } from "../../utils/logger";
 import { shouldClientCacheKey } from "./redisKeys";
 
 export interface RedisStats {

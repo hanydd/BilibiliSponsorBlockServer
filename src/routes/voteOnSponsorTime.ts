@@ -23,7 +23,7 @@ import { isUserTempVIP } from "../utils/isUserTempVIP";
 import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../service/redis/redisLock";
 import { deleteLockCategories } from "./deleteLockCategories";
 
 const voteTypes = {

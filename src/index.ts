@@ -4,7 +4,7 @@ import { createServer } from "./app";
 import { Logger } from "./utils/logger";
 import { startAllCrons } from "./cronjob";
 import { getCommit } from "./utils/getCommit";
-import { connectionPromise } from "./utils/redis";
+import { connectionPromise } from "./service/redis/redis";
 
 async function init() {
     process.on("unhandledRejection", (error: any) => {

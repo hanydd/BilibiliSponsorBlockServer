@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Server } from "http";
 import { config } from "../config";
-import { getRedisStats } from "../utils/redis";
+import { getRedisStats } from "../service/redis/redis";
 import { Postgres } from "../databases/Postgres";
 import { db } from "../databases/databases";
 

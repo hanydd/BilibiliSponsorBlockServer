@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 import { VideoID, VideoIDHash, Service } from "../types/segments.model";
 import { QueryCacher } from "../utils/queryCacher";
-import { skipSegmentsHashKey, skipSegmentsKey, videoLabelsHashKey, videoLabelsKey } from "../utils/redisKeys";
+import { skipSegmentsHashKey, skipSegmentsKey, videoLabelsHashKey, videoLabelsKey } from "../service/redis/redisKeys";
 
 type hashType = "skipSegments" | "skipSegmentsHash" | "videoLabel" | "videoLabelHash" | "branding" | "brandingHash";
 type ETag = `"${hashType};${VideoIDHash};${Service};${number}"`;

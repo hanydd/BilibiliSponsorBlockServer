@@ -14,7 +14,7 @@ import { average } from "../utils/array";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getVideoDetails } from "../utils/getVideoDetails";
 import { Logger } from "../utils/logger";
-import { acquireLock } from "../utils/redisLock";
+import { acquireLock } from "../service/redis/redisLock";
 import { validate } from "../validate/bilibiliID";
 import { YouTubeAPI } from "../service/api/youtubeApi";
 

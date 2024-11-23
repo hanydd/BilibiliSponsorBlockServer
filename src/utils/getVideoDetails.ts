@@ -2,7 +2,7 @@ import { BilibiliVideoDetailView } from "../types/bilibiliViewApi.model";
 import { BilibiliAPI } from "./bilibiliApi";
 import { Logger } from "./logger";
 import { QueryCacher } from "./queryCacher";
-import { videoDetailCacheKey } from "./redisKeys";
+import { videoDetailCacheKey } from "../service/redis/redisKeys";
 
 export interface VideoPageDetail {
     cid: string;
