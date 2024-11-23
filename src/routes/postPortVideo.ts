@@ -13,7 +13,7 @@ import { isUserVIP } from "../utils/isUserVIP";
 import { Logger } from "../utils/logger";
 import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { average } from "../utils/array";
-import { getYoutubeSegments, getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
+import { getYoutubeSegments } from "../service/api/sponsorBlockApi";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getHash } from "../utils/getHash";
 import { getReputation } from "../utils/reputation";
@@ -22,6 +22,7 @@ import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../utils/redisLock";
 import { vote as votePortVideo } from "./voteOnPortVideo";
 import { saveVideoInfo } from "../dao/videoInfo";
+import { YouTubeAPI } from "../service/api/youtubeApi";
 
 type CheckResult = {
     pass: boolean;
@@ -79,7 +80,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${ytbDuration}s`);
     }
     if (!ytbDuration) {
-        ytbDuration = await getYoutubeVideoDuraion(ytbID);
+        ytbDuration = await YouTubeAPI.getYoutubeVideoDuraion(ytbID);
     }
 
     // video duration check
@@ -163,7 +164,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             hasActive = false;
         } else {
             // check ytb duration
-            const activeMatchYtbDuration = await getYoutubeVideoDuraion(activeMatch.ytbID);
+            const activeMatchYtbDuration = await YouTubeAPI.getYoutubeVideoDuraion(activeMatch.ytbID);
             if (!durationsAllEqual([activeMatch.ytbDuration, activeMatch.biliDuration, activeMatchYtbDuration])) {
                 uuidToHide.add(activeMatch.UUID);
                 hasActive = false;

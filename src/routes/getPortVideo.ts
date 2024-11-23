@@ -6,16 +6,17 @@ import {
     hidePortVideoByUUID,
 } from "../dao/portVideo";
 import { createSegmentsFromYTB, getSegmentsFromDBByVideoID, hideSegmentsByUUID, saveNewSegments, updateVotes } from "../dao/skipSegment";
+import { getYoutubeSegments } from "../service/api/sponsorBlockApi";
 import { HashedValue } from "../types/hash.model";
 import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { average } from "../utils/array";
-import { validate } from "../validate/bilibiliID";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
 import { getVideoDetails } from "../utils/getVideoDetails";
-import { getYoutubeSegments, getYoutubeVideoDuraion } from "../utils/getYoutubeVideoSegments";
 import { Logger } from "../utils/logger";
 import { acquireLock } from "../utils/redisLock";
+import { validate } from "../validate/bilibiliID";
+import { YouTubeAPI } from "../service/api/youtubeApi";
 
 export async function updatePortedSegments(req: Request, res: Response) {
     const bvid = req.body.videoID as VideoID;
@@ -47,7 +48,7 @@ export async function updateSegmentsFromSB(portVideo: PortVideoDB) {
         Logger.info(`Retrieved ${ytbSegments.length} segments from SB server. Average video duration: ${apiYtbDuration}s`);
     }
     if (!apiYtbDuration) {
-        apiYtbDuration = await getYoutubeVideoDuraion(ytbID);
+        apiYtbDuration = await YouTubeAPI.getYoutubeVideoDuraion(ytbID);
     }
     // video duration check
     const dbBiliDuration = portVideo.biliDuration;

@@ -1,10 +1,9 @@
-import { BilibiliPagelistDetail } from "../types/bilibiliPagelist.model";
-import { BilibiliVideoDetailView } from "../types/bilibiliViewApi.model";
-import { Logger } from "./logger";
 import axios from "axios";
+import { BilibiliPagelistDetail } from "../../types/bilibiliPagelist.model";
+import { BilibiliVideoDetailView } from "../../types/bilibiliViewApi.model";
+import { Logger } from "../../utils/logger";
 
 export class BilibiliAPI {
-
     static async getPagelist(videoID: string): Promise<BilibiliPagelistDetail[]> {
         // TODO: validate video id
 
@@ -38,5 +37,4 @@ export class BilibiliAPI {
             return Promise.reject(`Bilibili Pagelist API non-200 response of ${videoID}: ${result.data.message}`);
         }
     }
-
 }
