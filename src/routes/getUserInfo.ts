@@ -8,7 +8,7 @@ import { getReputation } from "../utils/reputation";
 import { Category, SegmentUUID } from "../types/segments.model";
 import { config } from "../config";
 import { canSubmit } from "../utils/permissions";
-import { isUserBanned } from "../utils/checkBan";
+import { isUserBanned } from "../service/checkBan";
 const maxRewardTime = config.maxRewardTimePerSegmentInSeconds;
 
 async function dbGetSubmittedSegmentSummary(userID: HashedUserID): Promise<{ minutesSaved: number, segmentCount: number }> {

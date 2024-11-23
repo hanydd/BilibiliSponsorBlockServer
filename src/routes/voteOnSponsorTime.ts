@@ -15,7 +15,7 @@ import {
     VoteType,
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { checkBanStatus } from "../utils/checkBan";
+import { checkBanStatus } from "../service/checkBan";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";

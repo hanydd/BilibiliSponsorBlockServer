@@ -3,7 +3,7 @@ import { db } from "../databases/databases";
 import { Category, HashedIP } from "../types/segments.model";
 import { banUser } from "../routes/shadowBanUser";
 import { config } from "../config";
-import { Logger } from "./logger";
+import { Logger } from "../utils/logger";
 
 export async function isUserBanned(userID: HashedUserID): Promise<boolean> {
     return (await db.prepare("get", `SELECT 1 FROM "shadowBannedUsers" WHERE "userID" = ? LIMIT 1`, [userID], { useReplica: true })) !== undefined;

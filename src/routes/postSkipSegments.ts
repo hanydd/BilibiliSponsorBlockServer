@@ -14,7 +14,7 @@ import {
     VideoID,
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { checkBanStatus } from "../utils/checkBan";
+import { checkBanStatus } from "../service/checkBan";
 import { durationEquals } from "../utils/durationUtil";
 import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";

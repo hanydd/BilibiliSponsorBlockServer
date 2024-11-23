@@ -3,7 +3,7 @@ import { Logger } from "../utils/logger";
 import { db, privateDB } from "../databases/databases";
 import { getHashCache } from "../utils/getHashCache";
 import { Request, Response } from "express";
-import { isUserBanned } from "../utils/checkBan";
+import { isUserBanned } from "../service/checkBan";
 import { HashedUserID } from "../types/user.model";
 
 function logUserNameChange(userID: string, newUserName: string, oldUserName: string, updatedByAdmin: boolean): Promise<Response>  {
