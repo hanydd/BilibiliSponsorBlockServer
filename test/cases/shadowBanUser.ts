@@ -1,7 +1,7 @@
-import { db, privateDB } from "../../src/databases/databases";
-import { getHash } from "../../src/utils/getHash";
 import assert from "assert";
+import { db } from "../../src/databases/databases";
 import { Category, Service } from "../../src/types/segments.model";
+import { getHash } from "../../src/utils/getHash";
 import { client } from "../utils/httpClient";
 
 describe("shadowBanUser", () => {

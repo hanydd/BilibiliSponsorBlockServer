@@ -50,7 +50,7 @@ export async function acquireLock(key: string, timeout = defaultTimeout): Promis
     };
 }
 
-export async function forceUnLock(key: string): Promise<void> {
+export function forceUnLock(key: string): Promise<void> {
     if (!config.redis?.enabled) {
         return;
     }
