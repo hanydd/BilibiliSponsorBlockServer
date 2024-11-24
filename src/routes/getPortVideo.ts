@@ -165,6 +165,7 @@ export async function getPortVideo(req: Request, res: Response): Promise<Respons
 
     return res.json({
         bvID: portVideo.bvID,
+        cid: portVideo.cid,
         ytbID: portVideo.ytbID,
         UUID: portVideo.UUID,
         votes: portVideo.votes,

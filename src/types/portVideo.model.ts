@@ -9,6 +9,7 @@ export type portVideoUUID = string & { __portVideoUUIDBrand: unknown };
  */
 export interface PortVideoInterface {
     bvID: VideoID;
+    cid: string;
     ytbID: VideoID;
     UUID: string;
     votes: number;

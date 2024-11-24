@@ -67,7 +67,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
     // get default cid
     if (!cid) {
-        if (biliVideoDetail.page.length == 0 || biliVideoDetail.page.length > 1) {
+        if (biliVideoDetail.page.length != 1) {
             return res.status(400).send("插件暂时不支持绑定分P视频！");
         }
         cid = biliVideoDetail.page[0].cid;
@@ -116,9 +116,9 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     const uuidToHide: Set<string> = new Set();
     const existingMatch: PortVideo[] = await db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "timeSubmitted"
-        FROM "portVideo" WHERE "bvID" = ?`,
-        [bvID]
+        `SELECT "bvID", "cid", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "timeSubmitted"
+        FROM "portVideo" WHERE "bvID" = ? AND "cid" = ?`,
+        [bvID, cid]
     );
 
     // check if the existing data is exactly the same as the submitted ones
@@ -136,6 +136,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             await votePortVideo(exactMatches[0].UUID, bvID, paramUserID, VoteType.Upvote, rawIP);
             return res.json({
                 bvID: exactMatches[0].bvID,
+                cid: exactMatches[0].cid,
                 ytbID: exactMatches[0].ytbID,
                 UUID: exactMatches[0].UUID,
                 votes: exactMatches[0].votes,
@@ -197,10 +198,11 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     try {
         await db.prepare(
             "run",
-            `INSERT INTO "portVideo" ("bvID", "ytbID", "UUID", "votes", "locked", "userID", "timeSubmitted",
-             "biliDuration", "ytbDuration", "userAgent", "hidden", "hashedBvID") VALUES(?,?,?,?,?,?,?,?,?,?,?,?)`,
+            `INSERT INTO "portVideo" ("bvID", "cid", "ytbID", "UUID", "votes", "locked", "userID", "timeSubmitted",
+             "biliDuration", "ytbDuration", "userAgent", "hidden", "hashedBvID") VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)`,
             [
                 bvID,
+                cid,
                 ytbID,
                 matchVideoUUID,
                 startingVotes,
@@ -214,8 +216,9 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
                 hashedBvID,
             ]
         );
-        await privateDB.prepare("run", `INSERT INTO "portVideo" ("bvID", "UUID", "hashedIP", "timeSubmitted") VALUES (?,?,?,?)`, [
+        await privateDB.prepare("run", `INSERT INTO "portVideo" ("bvID", "cid", "UUID", "hashedIP", "timeSubmitted") VALUES (?,?,?,?,?)`, [
             bvID,
+            cid,
             matchVideoUUID,
             hashedIP,
             timeSubmitted,
@@ -233,6 +236,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
         lock.unlock();
         return res.json({
             bvID,
+            cid,
             ytbID,
             UUID: matchVideoUUID,
             votes: startingVotes,
@@ -248,6 +252,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
         sponsorTime.push([
             bvID,
+            cid,
             s.segment[0],
             s.segment[1],
             startingVotes,
@@ -270,7 +275,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
             matchVideoUUID,
         ]);
 
-        privateSponsorTime.push([bvID, hashedIP, timeSubmitted, Service.YouTube]);
+        privateSponsorTime.push([bvID, cid, hashedIP, timeSubmitted, Service.YouTube]);
     }
     QueryCacher.clearSegmentCache({ videoID: bvID, hashedVideoID: hashedBvID, service: Service.YouTube });
 
@@ -279,16 +284,16 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
 
         await db.prepare(
             "run",
-            `INSERT INTO "sponsorTimes" ("videoID", "startTime", "endTime", "votes", "locked", "UUID",
+            `INSERT INTO "sponsorTimes" ("videoID", "cid", "startTime", "endTime", "votes", "locked", "UUID",
             "userID", "timeSubmitted", "views", "category", "actionType", "service", "videoDuration", "reputation",
             "shadowHidden", "hashedVideoID", "userAgent", "description", "ytbID", "ytbSegmentUUID", "portUUID")
-            VALUES ${Array(sponsorTime.length).fill("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").join(",")}`,
+            VALUES ${Array(sponsorTime.length).fill("(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)").join(",")}`,
             sponsorTime.flat()
         );
         await privateDB.prepare(
             "run",
-            `INSERT INTO "sponsorTimes" ("videoID", "hashedIP", "timeSubmitted", "service")
-            VALUES ${Array(privateSponsorTime.length).fill("(?, ?, ?, ?)").join(",")}`,
+            `INSERT INTO "sponsorTimes" ("videoID", "cid", "hashedIP", "timeSubmitted", "service")
+            VALUES ${Array(privateSponsorTime.length).fill("(?,?,?,?,?)").join(",")}`,
             privateSponsorTime.flat()
         );
     } catch (err) {
@@ -298,6 +303,7 @@ export async function postPortVideo(req: Request, res: Response): Promise<Respon
     lock.unlock();
     return res.json({
         bvID,
+        cid,
         ytbID,
         UUID: matchVideoUUID,
         votes: startingVotes,

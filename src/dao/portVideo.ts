@@ -8,7 +8,7 @@ import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } fro
 function getPortVideoDBByBvID(bvID: VideoID, downvoteThreshold = -2): Promise<PortVideoDB[]> {
     return db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "userID", "userAgent" FROM "portVideo"
+        `SELECT "bvID", "cid", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "userID", "userAgent" FROM "portVideo"
         WHERE "bvID" = ? AND "hidden" = 0 AND "votes" > ?`,
         [bvID, downvoteThreshold]
     );
@@ -30,7 +30,7 @@ export async function getPortVideoByBvIDCached(bvID: VideoID): Promise<PortVideo
 function getPortVideoDBByHashPrefix(hashPrefix: string): Promise<PortVideoInterface[]> {
     return db.prepare(
         "all",
-        `SELECT "bvID", "ytbID", "UUID", "votes", "locked" FROM "portVideo"
+        `SELECT "bvID", "cid", "ytbID", "UUID", "votes", "locked" FROM "portVideo"
         WHERE "hashedBvID" LIKE ? AND "hidden" = 0 AND "votes" > -2`,
         [`${hashPrefix}%`]
     );
