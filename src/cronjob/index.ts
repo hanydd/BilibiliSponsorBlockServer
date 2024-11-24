@@ -11,6 +11,8 @@ export function startAllCrons(): void {
         refreshTopUserViewJob.start();
         dumpDatebaseJob.start();
         refreshCidJob.start();
+
+        refreshCidJob.fireOnTick();
     } else {
         Logger.info("Crons dissabled");
     }
