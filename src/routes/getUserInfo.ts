@@ -1,14 +1,14 @@
-import { db } from "../databases/databases";
-import { getHashCache } from "../utils/getHashCache";
-import { isUserVIP } from "../utils/isUserVIP";
 import { Request, Response } from "express";
-import { Logger } from "../utils/logger";
-import { HashedUserID, UserID } from "../types/user.model";
-import { getReputation } from "../utils/reputation";
-import { Category, SegmentUUID } from "../types/segments.model";
 import { config } from "../config";
-import { canSubmit } from "../utils/permissions";
+import { db } from "../databases/databases";
 import { isUserBanned } from "../service/checkBan";
+import { isUserVIP } from "../service/VIPUserService";
+import { Category, SegmentUUID } from "../types/segments.model";
+import { HashedUserID, UserID } from "../types/user.model";
+import { getHashCache } from "../utils/getHashCache";
+import { Logger } from "../utils/logger";
+import { canSubmit } from "../utils/permissions";
+import { getReputation } from "../utils/reputation";
 const maxRewardTime = config.maxRewardTimePerSegmentInSeconds;
 
 async function dbGetSubmittedSegmentSummary(userID: HashedUserID): Promise<{ minutesSaved: number, segmentCount: number }> {
@@ -137,7 +137,7 @@ const objSwitch = (cases: cases) => (defaultCase: string) => (key: string) =>
 const functionSwitch = (cases: cases) => (defaultCase: string) => (key: string) =>
     executeIfFunction(objSwitch(cases)(defaultCase)(key));
 
-const dbGetValue = (userID: HashedUserID, property: string): Promise<string|SegmentUUID|number> => {
+const dbGetValue = (userID: HashedUserID, property: string): Promise<string | SegmentUUID | number> => {
     return functionSwitch({
         userID,
         userName: () => dbGetUsername(userID),
@@ -187,7 +187,7 @@ async function getUserInfo(req: Request, res: Response): Promise<Response> {
     }
 
     try {
-        const responseObj = {} as Record<string, string|SegmentUUID|number>;
+        const responseObj = {} as Record<string, string | SegmentUUID | number>;
         for (const property of paramValues) {
             responseObj[property] = await dbGetValue(hashedUserID, property);
         }

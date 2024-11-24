@@ -1,9 +1,9 @@
 import { config } from "../config";
 import { db } from "../databases/databases";
+import { isUserVIP } from "../service/VIPUserService";
 import { Category } from "../types/segments.model";
 import { Feature, HashedUserID } from "../types/user.model";
 import { hasFeature } from "./features";
-import { isUserVIP } from "./isUserVIP";
 import { oneOf } from "./promise";
 import { getReputation } from "./reputation";
 

@@ -1,12 +1,12 @@
-import { VideoID } from "../types/segments.model";
-import { getVideoDetails } from "../utils/getVideoDetails";
-import { getHashCache } from "../utils/getHashCache";
-import { privateDB } from "../databases/databases";
 import { Request, Response } from "express";
-import { isUserVIP } from "../utils/isUserVIP";
-import { HashedUserID } from "../types/user.model";
+import { privateDB } from "../databases/databases";
 import redis from "../service/redis/redis";
 import { tempVIPKey } from "../service/redis/redisKeys";
+import { isUserVIP } from "../service/VIPUserService";
+import { VideoID } from "../types/segments.model";
+import { HashedUserID } from "../types/user.model";
+import { getHashCache } from "../utils/getHashCache";
+import { getVideoDetails } from "../utils/getVideoDetails";
 import { Logger } from "../utils/logger";
 
 interface AddUserAsTempVIPRequest extends Request {

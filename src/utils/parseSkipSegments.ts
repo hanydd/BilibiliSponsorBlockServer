@@ -2,7 +2,7 @@ import { Request } from "express";
 import { ActionType, Category, SegmentUUID, Service } from "../types/segments.model";
 import { getService } from "./getService";
 
-import { ALL_ACTION_TYPES, ALL_CATEGORIES } from "./contant";
+import { ALL_ACTION_TYPES, ALL_CATEGORIES } from "./constant";
 import { parseActionTypes, parseCategories, parseRequiredSegments } from "./parseParams";
 
 const errorMessage = (parameter: string) => `${parameter} parameter does not match format requirements.`;

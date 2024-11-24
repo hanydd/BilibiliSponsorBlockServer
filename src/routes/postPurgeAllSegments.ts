@@ -1,6 +1,6 @@
 import { Logger } from "../utils/logger";
 import { getHashCache } from "../utils/getHashCache";
-import { isUserVIP } from "../utils/isUserVIP";
+import { isUserVIP } from "../service/VIPUserService";
 import { Request, Response } from "express";
 import { HashedUserID, UserID } from "../types/user.model";
 import { Service, VideoID, VideoIDHash } from "../types/segments.model";

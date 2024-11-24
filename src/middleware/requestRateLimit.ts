@@ -1,14 +1,14 @@
-import { getIP } from "../utils/getIP";
+import { Request, RequestHandler } from "express";
+import rateLimit from "express-rate-limit";
+import RedisStore, { RedisReply } from "rate-limit-redis";
+import { config } from "../config";
+import redis from "../service/redis/redis";
+import { isUserVIP } from "../service/VIPUserService";
+import { RateLimitConfig } from "../types/config.model";
+import { UserID } from "../types/user.model";
 import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";
-import rateLimit from "express-rate-limit";
-import { RateLimitConfig } from "../types/config.model";
-import { Request, RequestHandler } from "express";
-import { isUserVIP } from "../utils/isUserVIP";
-import { UserID } from "../types/user.model";
-import RedisStore, { RedisReply } from "rate-limit-redis";
-import redis from "../service/redis/redis";
-import { config } from "../config";
+import { getIP } from "../utils/getIP";
 import { Logger } from "../utils/logger";
 
 export function rateLimitMiddleware(limitConfig: RateLimitConfig, getUserID?: (req: Request) => UserID): RequestHandler {

@@ -23,7 +23,7 @@ import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
 import { isUserTempVIP } from "../service/VIPUserService";
-import { isUserVIP } from "../utils/isUserVIP";
+import { isUserVIP } from "../service/VIPUserService";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";
 import { QueryCacher } from "../utils/queryCacher";

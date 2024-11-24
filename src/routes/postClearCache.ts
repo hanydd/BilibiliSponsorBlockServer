@@ -1,12 +1,11 @@
-import { Logger } from "../utils/logger";
+import { Request, Response } from "express";
+import { isUserVIP } from "../service/VIPUserService";
+import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
-import { Request, Response } from "express";
-import { Service, VideoID } from "../types/segments.model";
-import { QueryCacher } from "../utils/queryCacher";
-import { isUserVIP } from "../utils/isUserVIP";
-import { VideoIDHash } from "../types/segments.model";
 import { getService } from "../utils/getService";
+import { Logger } from "../utils/logger";
+import { QueryCacher } from "../utils/queryCacher";
 
 export async function postClearCache(req: Request, res: Response): Promise<Response> {
     const videoID = req.query.videoID as VideoID;
@@ -33,21 +32,21 @@ export async function postClearCache(req: Request, res: Response): Promise<Respo
     const hashedVideoID: VideoIDHash = await getHashCache(videoID, 1);
 
     // Ensure user is a VIP
-    if (!(await isUserVIP(hashedUserID))){
+    if (!(await isUserVIP(hashedUserID))) {
         Logger.warn(`Permission violation: User ${hashedUserID} attempted to clear cache for video ${videoID}.`);
-        return res.status(403).json({ "message": "Not a VIP" });
+        return res.status(403).json({ message: "Not a VIP" });
     }
 
     try {
         QueryCacher.clearSegmentCache({
             videoID,
             hashedVideoID,
-            service
+            service,
         });
         return res.status(200).json({
-            message: `Cache cleared on video ${videoID}`
+            message: `Cache cleared on video ${videoID}`,
         });
-    } catch(err) /* istanbul ignore next */ {
+    } catch (err) /* istanbul ignore next */ {
         return res.sendStatus(500);
     }
 }

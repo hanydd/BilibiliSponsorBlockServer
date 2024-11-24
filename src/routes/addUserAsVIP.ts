@@ -2,9 +2,9 @@ import { getHashCache } from "../utils/getHashCache";
 import { db } from "../databases/databases";
 import { config } from "../config";
 import { Request, Response } from "express";
-import { isUserVIP } from "../utils/isUserVIP";
 import { HashedUserID } from "../types/user.model";
 import { Logger } from "../utils/logger";
+import { isUserVIP } from "../service/VIPUserService";
 
 interface AddUserAsVIPRequest extends Request {
     query: {

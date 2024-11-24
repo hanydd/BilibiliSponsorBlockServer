@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Logger } from "../utils/logger";
 import { db } from "../databases/databases";
-import { isUserVIP } from "../utils/isUserVIP";
+import { isUserVIP } from "../service/VIPUserService";
 import { getHashCache } from "../utils/getHashCache";
 import { HashedUserID, UserID } from "../types/user.model";
 import { config } from "../config";

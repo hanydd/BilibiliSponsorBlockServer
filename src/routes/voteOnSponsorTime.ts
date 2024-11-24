@@ -20,7 +20,7 @@ import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
 import { isUserTempVIP } from "../service/VIPUserService";
-import { isUserVIP } from "../utils/isUserVIP";
+import { isUserVIP } from "../service/VIPUserService";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";
 import { acquireLock } from "../service/redis/redisLock";

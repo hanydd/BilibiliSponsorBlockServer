@@ -5,9 +5,9 @@ import { config } from "../config";
 import { Category, Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { UserID } from "../types/user.model";
 import { QueryCacher } from "../utils/queryCacher";
-import { isUserVIP } from "../utils/isUserVIP";
 import { parseCategories } from "../utils/parseParams";
 import { Logger } from "../utils/logger";
+import { isUserVIP } from "../service/VIPUserService";
 
 export async function shadowBanUser(req: Request, res: Response): Promise<Response> {
     const userID = req.query.userID as UserID;
