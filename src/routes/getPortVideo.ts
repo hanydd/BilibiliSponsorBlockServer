@@ -12,7 +12,7 @@ import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.m
 import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { average } from "../utils/array";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
-import { getVideoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails } from "../service/api/getVideoDetails";
 import { Logger } from "../utils/logger";
 import { acquireLock } from "../service/redis/redisLock";
 import { validate } from "../validate/bilibiliID";

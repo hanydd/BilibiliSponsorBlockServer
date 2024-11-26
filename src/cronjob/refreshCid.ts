@@ -4,7 +4,7 @@ import { db } from "../databases/databases";
 import { PortVideoDB } from "../types/portVideo.model";
 import { DBSegment, HiddenType, SegmentUUID } from "../types/segments.model";
 import { durationEquals } from "../utils/durationUtil";
-import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
+import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
 import { Logger } from "../utils/logger";
 import { sleep } from "../utils/timeUtil";
 

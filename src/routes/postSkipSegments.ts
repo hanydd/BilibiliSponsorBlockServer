@@ -21,7 +21,7 @@ import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
-import { getVideoDetails, VideoDetail } from "../utils/getVideoDetails";
+import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
 import { isUserTempVIP } from "../service/VIPUserService";
 import { isUserVIP } from "../service/VIPUserService";
 import { Logger } from "../utils/logger";

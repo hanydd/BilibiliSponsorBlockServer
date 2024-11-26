@@ -6,7 +6,7 @@ import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { config } from "../config";
 import * as youtubeID from "../validate/youtubeID";
 import * as biliID from "../validate/bilibiliID";
-import { getVideoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails } from "../service/api/getVideoDetails";
 import { parseUserAgentFromHeaders } from "../utils/userAgent";
 import { getMatchVideoUUID, getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { Logger } from "../utils/logger";

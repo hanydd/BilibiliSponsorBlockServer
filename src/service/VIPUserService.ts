@@ -3,7 +3,7 @@ import { tempVIPKey } from "./redis/redisKeys";
 import { HashedUserID } from "../types/user.model";
 import { VideoID } from "../types/segments.model";
 import { Logger } from "../utils/logger";
-import { getVideoDetails } from "../utils/getVideoDetails";
+import { getVideoDetails } from "./api/getVideoDetails";
 import { db } from "../databases/databases";
 
 export const isUserTempVIP = async (hashedUserID: HashedUserID, videoID: VideoID): Promise<boolean> => {

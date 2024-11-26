@@ -1,5 +1,5 @@
 import { db } from "../databases/databases";
-import { VideoDetail } from "../utils/getVideoDetails";
+import { VideoDetail } from "../service/api/getVideoDetails";
 
 export async function saveVideoInfo(biliVideoDetail: VideoDetail) {
     for (const page of biliVideoDetail.page) {
