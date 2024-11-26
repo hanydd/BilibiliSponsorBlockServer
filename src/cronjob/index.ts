@@ -9,10 +9,13 @@ export function startAllCrons(): void {
         Logger.info("Crons started");
 
         refreshTopUserViewJob.start();
-        dumpDatebaseJob.start();
-        refreshCidJob.start();
 
-        refreshCidJob.fireOnTick();
+        if (config.mode === "production") {
+            // only run in production mode
+            dumpDatebaseJob.start();
+            refreshCidJob.start();
+            refreshCidJob.fireOnTick();
+        }
     } else {
         Logger.info("Crons dissabled");
     }
