@@ -1,11 +1,12 @@
 import { config } from "../config";
 import { db } from "../databases/databases";
+import { userFeatureKey } from "../service/redis/redisKeys";
+import { getReputation } from "../service/reputationService";
 import { isUserVIP } from "../service/VIPUserService";
 import { Category } from "../types/segments.model";
 import { Feature, HashedUserID } from "../types/user.model";
-import { hasFeature } from "./features";
 import { oneOf } from "./promise";
-import { getReputation } from "../service/reputationService";
+import { QueryCacher } from "./queryCacher";
 
 interface CanSubmitResult {
     canSubmit: boolean;
@@ -36,4 +37,11 @@ export async function canSubmit(userID: HashedUserID, category: Category): Promi
                 reason: ""
             };
     }
+}
+
+export async function hasFeature(userID: HashedUserID, feature: Feature): Promise<boolean> {
+    return await QueryCacher.get(async () => {
+        const result = await db.prepare("get", 'SELECT "feature" from "userFeatures" WHERE "userID" = ? AND "feature" = ?', [userID, feature], { useReplica: true });
+        return !!result;
+    }, userFeatureKey(userID, feature));
 }
