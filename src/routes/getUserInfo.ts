@@ -8,7 +8,7 @@ import { HashedUserID, UserID } from "../types/user.model";
 import { getHashCache } from "../utils/getHashCache";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";
-import { getReputation } from "../utils/reputation";
+import { getReputation } from "../service/reputationService";
 const maxRewardTime = config.maxRewardTimePerSegmentInSeconds;
 
 async function dbGetSubmittedSegmentSummary(userID: HashedUserID): Promise<{ minutesSaved: number, segmentCount: number }> {

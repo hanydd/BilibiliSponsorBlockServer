@@ -33,7 +33,7 @@ import { parseSkipSegments } from "../utils/parseSkipSegments";
 import { promiseOrTimeout } from "../utils/promise";
 import { QueryCacher } from "../utils/queryCacher";
 import { shadowHiddenIPKey, skipSegmentGroupsKey } from "../service/redis/redisKeys";
-import { getReputation } from "../utils/reputation";
+import { getReputation } from "../service/reputationService";
 
 async function prepareCategorySegments(
     req: Request,

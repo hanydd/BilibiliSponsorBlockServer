@@ -5,7 +5,7 @@ import { Category } from "../types/segments.model";
 import { Feature, HashedUserID } from "../types/user.model";
 import { hasFeature } from "./features";
 import { oneOf } from "./promise";
-import { getReputation } from "./reputation";
+import { getReputation } from "../service/reputationService";
 
 interface CanSubmitResult {
     canSubmit: boolean;

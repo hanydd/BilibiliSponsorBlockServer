@@ -2,7 +2,7 @@ import axios from "axios";
 import { config } from "../../config";
 import { VideoDuration } from "../../types/segments.model";
 import { APIVideoData, APIVideoInfo } from "../../types/youtubeApi.model";
-import DiskCache from "../../utils/diskCache";
+import DiskCache from "../redis/diskCache";
 import { ISODurationRegex, parseISODurationToVideoDuration } from "../../utils/durationUtil";
 import { Logger } from "../../utils/logger";
 

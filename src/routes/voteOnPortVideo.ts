@@ -4,7 +4,7 @@ import { db, privateDB } from "../databases/databases";
 import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo.model";
 import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { validate } from "../validate/bilibiliID";
+import { validate } from "../service/validate/bilibiliID";
 import { getHash } from "../utils/getHash";
 import { getHashCache, getHashedIP } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";

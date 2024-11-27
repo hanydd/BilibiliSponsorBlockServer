@@ -1,4 +1,4 @@
-import { VideoID } from "../types/segments.model";
+import { VideoID } from "../../types/segments.model";
 
 const bvidRegex = new RegExp(/(BV[0-9A-Za-z]{10})/);
 const exclusiveBvidRegex = new RegExp(`^${bvidRegex.source}$`);

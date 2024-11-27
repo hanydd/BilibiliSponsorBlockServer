@@ -1,7 +1,7 @@
 import { db } from "../databases/databases";
 import { UserID } from "../types/user.model";
-import { QueryCacher } from "./queryCacher";
-import { reputationKey } from "../service/redis/redisKeys";
+import { QueryCacher } from "../utils/queryCacher";
+import { reputationKey } from "./redis/redisKeys";
 
 interface ReputationDBResult {
     totalSubmissions: number,

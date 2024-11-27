@@ -1,7 +1,15 @@
 import axios from "axios";
 import { Request, Response } from "express";
 import { config } from "../config";
+import { saveVideoInfo } from "../dao/videoInfo";
 import { db, privateDB } from "../databases/databases";
+import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
+import { checkBanStatus } from "../service/checkBan";
+import { acquireLock } from "../service/redis/redisLock";
+import { getReputation } from "../service/reputationService";
+import * as biliID from "../service/validate/bilibiliID";
+import { validateCid, validatePrivateUserID } from "../service/validate/validator";
+import { isUserTempVIP, isUserVIP } from "../service/VIPUserService";
 import {
     ActionType,
     Category,
@@ -14,27 +22,18 @@ import {
     VideoID,
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { checkBanStatus } from "../service/checkBan";
 import { durationEquals } from "../utils/durationUtil";
 import { getHash } from "../utils/getHash";
 import { getHashCache } from "../utils/getHashCache";
 import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
-import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
-import { isUserTempVIP } from "../service/VIPUserService";
-import { isUserVIP } from "../service/VIPUserService";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";
 import { QueryCacher } from "../utils/queryCacher";
-import { acquireLock } from "../service/redis/redisLock";
-import { getReputation } from "../utils/reputation";
 import { parseUserAgentFromHeaders } from "../utils/userAgent";
-import * as biliID from "../validate/bilibiliID";
-import { validateCid, validatePrivateUserID } from "../validate/validator";
 import { deleteLockCategories } from "./deleteLockCategories";
 import { vote } from "./voteOnSponsorTime";
-import { saveVideoInfo } from "../dao/videoInfo";
 
 type CheckResult = {
     pass: boolean;
