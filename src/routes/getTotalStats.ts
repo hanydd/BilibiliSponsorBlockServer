@@ -1,9 +1,8 @@
-import { db } from "../databases/databases";
-import { config } from "../config";
-import { Request, Response } from "express";
 import axios from "axios";
+import { Request, Response } from "express";
+import { config } from "../config";
+import { db } from "../databases/databases";
 import { Logger } from "../utils/logger";
-import { getChromeUsers, getEdgeUsers } from "../utils/getCWSUsers";
 
 // A cache of the number of chrome web store users
 let chromeUsersCache = 0;
@@ -15,17 +14,17 @@ let apiUsersCache = 0;
 let lastUserCountCheck = 0;
 
 interface DBStatsData {
-    userCount: number,
-    viewCount: number,
-    totalSubmissions: number,
-    minutesSaved: number
+    userCount: number;
+    viewCount: number;
+    totalSubmissions: number;
+    minutesSaved: number;
 }
 
 let lastFetch: DBStatsData = {
     userCount: 0,
     viewCount: 0,
     totalSubmissions: 0,
-    minutesSaved: 0
+    minutesSaved: 0,
 };
 
 updateExtensionUsers();
@@ -69,39 +68,72 @@ function getStats(countContributingUsers: boolean): Promise<DBStatsData> {
     } else {
         const userCountQuery = `(SELECT COUNT(*) FROM (SELECT DISTINCT "userID" from "sponsorTimes") t) "userCount",`;
 
-        return db.prepare("get", `SELECT ${countContributingUsers ? userCountQuery : ""} COUNT(*) as "totalSubmissions",
-            SUM("views") as "viewCount", SUM(("endTime" - "startTime") / 60 * "views") as "minutesSaved" FROM "sponsorTimes" WHERE "shadowHidden" != 1 AND "votes" >= 0 AND "actionType" != 'chapter'`, []);
+        return db.prepare(
+            "get",
+            `SELECT ${countContributingUsers ? userCountQuery : ""} COUNT(*) as "totalSubmissions",
+            SUM("views") as "viewCount", SUM(("endTime" - "startTime") / 60 * "views") as "minutesSaved" FROM "sponsorTimes" WHERE "shadowHidden" != 1 AND "votes" >= 0 AND "actionType" != 'chapter'`,
+            []
+        );
     }
 }
 
 function updateExtensionUsers() {
-    /* istanbul ignore else */
     if (config.userCounterURL) {
-        axios.get(`${config.userCounterURL}/api/v1/userCount`)
-            .then(res => apiUsersCache = Math.max(apiUsersCache, res.data.userCount))
-            .catch( /* istanbul ignore next */ () => Logger.debug(`Failing to connect to user counter at: ${config.userCounterURL}`));
+        axios
+            .get(`${config.userCounterURL}/api/v1/userCount`)
+            .then((res) => (apiUsersCache = Math.max(apiUsersCache, res.data.userCount)))
+            .catch(() => Logger.debug(`Failing to connect to user counter at: ${config.userCounterURL}`));
     }
 
     const mozillaAddonsUrl = "https://addons.mozilla.org/api/v5/addons/addon/bilisponsorblock/";
     const edgeExtId = "khkeolgobhdoloioehjgfpobjnmagfha";
     const chromeExtId = "eaoelafamejbnggahofapllmfhlhajdd";
 
-    axios.get(mozillaAddonsUrl)
-        .then(res => firefoxUsersCache = res.data.average_daily_users )
-        .catch( /* istanbul ignore next */ () => {
-            Logger.debug(`Failing to connect to ${mozillaAddonsUrl}`);
+    axios
+        .get(mozillaAddonsUrl)
+        .then((res) => (firefoxUsersCache = res.data.average_daily_users))
+        .catch(() => {
+            Logger.error(`Failing to connect to ${mozillaAddonsUrl}`);
             return 0;
         });
 
     getChromeUsers(chromeExtId)
-        .then(res => chromeUsersCache = res)
+        .then((res) => (chromeUsersCache = res))
         .catch((err) => {
             Logger.error(`Error getting Chrome users - ${err}`);
         });
 
     getEdgeUsers(edgeExtId)
-        .then(res => egdeUserCache = res)
+        .then((res) => (egdeUserCache = res))
         .catch((err) => {
             Logger.error(`Error getting Edge users - ${err}`);
+        });
+}
+
+async function getEdgeUsers(extID: string): Promise<number | undefined> {
+    try {
+        const res = await axios.get(`https://microsoftedge.microsoft.com/addons/getproductdetailsbycrxid/${extID}`);
+        return res.data.activeInstallCount;
+    } catch (err) {
+        Logger.error(`Error getting Edge users - ${err}`);
+        return 0;
+    }
+}
+
+const chromeUserRegex = /<title>users: (([\d,]+?)|([\d,]+?k))<\/title>/;
+export function getChromeUsers(extID: string): Promise<number | undefined> {
+    return axios
+        .get(`https://img.shields.io/chrome-web-store/users/${extID}`)
+        .then((res) => {
+            const match = res.data.match(chromeUserRegex);
+            if (match && match[2]) {
+                return parseInt(match[2].replace(/,/g, ""));
+            } else if (match && match[3]) {
+                return parseInt(match[3].replace(/,|k/g, "")) * 1000;
+            }
+        })
+        .catch(() => {
+            Logger.error(`Failing to get user count of the Chrome Web Store: ${extID}`);
+            return 0;
         });
 }
