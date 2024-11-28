@@ -9,7 +9,7 @@ import { hostHeader } from "./middleware/hostHeader";
 import { loggerMiddleware } from "./middleware/logger";
 import { rateLimitMiddleware } from "./middleware/requestRateLimit";
 import { userCounter } from "./middleware/userCounter";
-import { addFeature } from "./routes/addFeature";
+import { addFeature, getFeatureFlag } from "./routes/feature";
 import { addUnlistedVideo } from "./routes/addUnlistedVideo";
 import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
 import { addUserAsVIP } from "./routes/addUserAsVIP";
@@ -17,7 +17,6 @@ import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
 import { generateTokenRequest } from "./routes/generateToken";
 import { getChapterNames } from "./routes/getChapterNames";
 import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
-import { getFeatureFlag } from "./routes/getFeatureFlag";
 import { getIsUserVIP } from "./routes/getIsUserVIP";
 import { getLockCategories } from "./routes/getLockCategories";
 import { getLockCategoriesByHash } from "./routes/getLockCategoriesByHash";
@@ -200,7 +199,6 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/lockReason", getLockReason);
 
     router.post("/api/feature", addFeature);
-
     router.get("/api/featureFlag/:name", getFeatureFlag);
 
     router.get("/api/generateToken/:type", generateTokenRequest);

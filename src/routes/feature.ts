@@ -74,3 +74,16 @@ export async function addFeature(req: AddFeatureRequest, res: Response): Promise
         return res.sendStatus(500);
     }
 }
+
+export function getFeatureFlag(req: Request, res: Response): Response {
+    const { params: { name } } = req;
+
+    switch (name) {
+        case "deArrowPaywall":
+            return res.status(200).json({
+                enabled: config.deArrowPaywall,
+            });
+    }
+
+    return res.status(404).json();
+}
