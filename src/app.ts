@@ -9,7 +9,6 @@ import { hostHeader } from "./middleware/hostHeader";
 import { loggerMiddleware } from "./middleware/logger";
 import { rateLimitMiddleware } from "./middleware/requestRateLimit";
 import { userCounter } from "./middleware/userCounter";
-import { addUnlistedVideo } from "./routes/addUnlistedVideo";
 import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
 import { addUserAsVIP } from "./routes/addUserAsVIP";
 import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
@@ -98,6 +97,9 @@ function setupRoutes(router: Router, server: Server) {
     // add the privacy protecting skip segments functions
     router.get("/api/skipSegments/:prefix", getSkipSegmentsByHash);
 
+    // get all segments that match a search
+    router.get("/api/searchSegments", getSearchSegments);
+
     //voting endpoint
     router.get("/api/voteOnSponsorTime", ...voteEndpoints);
     router.post("/api/voteOnSponsorTime", ...voteEndpoints);
@@ -106,56 +108,50 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/viewedVideoSponsorTime", ...viewEndpoints);
     router.post("/api/viewedVideoSponsorTime", ...viewEndpoints);
 
-    //To set your username for the stats view
+    // username
     router.post("/api/setUsername", setUsername);
-
-    //get what username this user has
     router.get("/api/getUsername", getUsername);
+    // get userID from username
+    router.get("/api/userID", getUserID);
 
-    //Endpoint used to hide a certain user's data
-    router.post("/api/shadowBanUser", shadowBanUser);
-
-    //Endpoint used to make a user a VIP user with special privileges
-    router.post("/api/addUserAsVIP", addUserAsVIP);
-    //Endpoint to add a user as a temporary VIP
-    router.post("/api/addUserAsTempVIP", addUserAsTempVIP);
-
-    //Gets all the views added up for one userID
-    //Useful to see how much one user has contributed
+    // user stats
     router.get("/api/getViewsForUser", getViewsForUser);
-
-    //Gets all the saved time added up (views * sponsor length) for one userID
-    //Useful to see how much one user has contributed
-    //In minutes
     router.get("/api/getSavedTimeForUser", getSavedTimeForUser);
+    router.get("/api/userInfo", getUserInfo);
+    router.get("/api/userStats", getUserStats);
 
+    // total stats
     router.get("/api/getTopUsers", getTopUsers);
     router.get("/api/getTopCategoryUsers", getTopCategoryUsers);
-
-    //send out totals
-    //send the total submissions, total views and total minutes saved
     router.get("/api/getTotalStats", getTotalStats);
-
-    router.get("/api/getUserInfo", getUserInfo);
-    router.get("/api/userInfo", getUserInfo);
-
-    //send out a formatted time saved total
     router.get("/api/getDaysSavedFormatted", getDaysSavedFormatted);
+
+    // server status
+    router.get("/api/status/:value", (req, res) => getStatus(req, res, server));
+    router.get("/api/status", (req, res) => getStatus(req, res, server));
+    router.get("/api/ready", (req, res) => getReady(req, res, server));
 
     //submit video to lock categories
     router.post("/api/noSegments", postLockCategories);
     router.post("/api/lockCategories", postLockCategories);
-
+    // get lock categores from userID
+    router.get("/api/lockCategories", getLockCategories);
+    router.get("/api/lockCategories/:prefix", getLockCategoriesByHash);
+    router.get("/api/lockReason", getLockReason);
+    // delete
     router.delete("/api/noSegments", deleteLockCategoriesEndpoint);
     router.delete("/api/lockCategories", deleteLockCategoriesEndpoint);
 
-    //get if user is a vip
-    router.get("/api/isUserVIP", getIsUserVIP);
-
+    //Endpoint used to hide a certain user's data
+    router.post("/api/shadowBanUser", shadowBanUser);
     //sent user a warning
     router.post("/api/warnUser", postWarning);
 
-    //get if user is a vip
+    // VIP
+    router.post("/api/addUserAsVIP", addUserAsVIP);
+    router.post("/api/addUserAsTempVIP", addUserAsTempVIP);
+    router.get("/api/isUserVIP", getIsUserVIP);
+
     router.post("/api/segmentShift", postSegmentShift);
 
     //get segment info
@@ -163,35 +159,9 @@ function setupRoutes(router: Router, server: Server) {
 
     //clear cache as VIP
     router.post("/api/clearCache", postClearCache);
-
-    //purge all segments for VIP
     router.post("/api/purgeAllSegments", postPurgeAllSegments);
 
-    router.post("/api/unlistedVideo", addUnlistedVideo);
-
-    // get userID from username
-    router.get("/api/userID", getUserID);
-
-    // get lock categores from userID
-    router.get("/api/lockCategories", getLockCategories);
-
-    // get privacy protecting lock categories functions
-    router.get("/api/lockCategories/:prefix", getLockCategoriesByHash);
-
-    // get all segments that match a search
-    router.get("/api/searchSegments", getSearchSegments);
-
-    // get status
-    router.get("/api/status/:value", (req, res) => getStatus(req, res, server));
-    router.get("/api/status", (req, res) => getStatus(req, res, server));
-
-    router.get("/api/ready", (req, res) => getReady(req, res, server));
-
-    // get user category stats
-    router.get("/api/userStats", getUserStats);
-
-    router.get("/api/lockReason", getLockReason);
-
+    // feature
     router.post("/api/feature", addFeature);
     router.get("/api/featureFlag/:name", getFeatureFlag);
 
