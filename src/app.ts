@@ -14,7 +14,6 @@ import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
 import { addUserAsVIP } from "./routes/addUserAsVIP";
 import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
 import { addFeature, getFeatureFlag } from "./routes/feature";
-import { getChapterNames } from "./routes/getChapterNames";
 import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
 import { getIsUserVIP } from "./routes/getIsUserVIP";
 import { getLockCategories } from "./routes/getLockCategories";
@@ -181,9 +180,6 @@ function setupRoutes(router: Router, server: Server) {
 
     // get all segments that match a search
     router.get("/api/searchSegments", getSearchSegments);
-
-    // autocomplete chapter names
-    router.get("/api/chapterNames", getChapterNames);
 
     // get status
     router.get("/api/status/:value", (req, res) => getStatus(req, res, server));
