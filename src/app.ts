@@ -9,12 +9,11 @@ import { hostHeader } from "./middleware/hostHeader";
 import { loggerMiddleware } from "./middleware/logger";
 import { rateLimitMiddleware } from "./middleware/requestRateLimit";
 import { userCounter } from "./middleware/userCounter";
-import { addFeature, getFeatureFlag } from "./routes/feature";
 import { addUnlistedVideo } from "./routes/addUnlistedVideo";
 import { addUserAsTempVIP } from "./routes/addUserAsTempVIP";
 import { addUserAsVIP } from "./routes/addUserAsVIP";
 import { deleteLockCategoriesEndpoint } from "./routes/deleteLockCategories";
-import { generateTokenRequest } from "./routes/generateToken";
+import { addFeature, getFeatureFlag } from "./routes/feature";
 import { getChapterNames } from "./routes/getChapterNames";
 import { getDaysSavedFormatted } from "./routes/getDaysSavedFormatted";
 import { getIsUserVIP } from "./routes/getIsUserVIP";
@@ -48,7 +47,6 @@ import { postSkipSegments } from "./routes/postSkipSegments";
 import { postWarning } from "./routes/postWarning";
 import { setUsername } from "./routes/setUsername";
 import { shadowBanUser } from "./routes/shadowBanUser";
-import { verifyTokenRequest } from "./routes/verifyToken";
 import { viewedVideoSponsorTime } from "./routes/viewedVideoSponsorTime";
 import { voteOnPortVideo } from "./routes/voteOnPortVideo";
 import { getUserID as voteGetUserID, voteOnSponsorTime } from "./routes/voteOnSponsorTime";
@@ -201,9 +199,6 @@ function setupRoutes(router: Router, server: Server) {
     router.post("/api/feature", addFeature);
     router.get("/api/featureFlag/:name", getFeatureFlag);
 
-    router.get("/api/generateToken/:type", generateTokenRequest);
-    router.get("/api/verifyToken", verifyTokenRequest);
-
     // labels
     router.get("/api/videoLabels", getVideoLabels);
     router.get("/api/videoLabels/:prefix", getVideoLabelsByHash);
@@ -213,6 +208,5 @@ function setupRoutes(router: Router, server: Server) {
     router.get("/api/portVideo/:prefix", getPortVideoByHash);
     router.post("/api/portVideo", postPortVideo);
     router.post("/api/votePort", voteOnPortVideo);
-
     router.post("/api/updatePortedSegments", updatePortedSegments);
 }
