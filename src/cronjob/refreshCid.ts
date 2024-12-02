@@ -1,12 +1,11 @@
 import { CronJob } from "cron";
 import { saveVideoInfo } from "../dao/videoInfo";
 import { db } from "../databases/databases";
+import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
 import { PortVideoDB } from "../types/portVideo.model";
 import { DBSegment, HiddenType, SegmentUUID } from "../types/segments.model";
 import { durationEquals } from "../utils/durationUtil";
-import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
 import { Logger } from "../utils/logger";
-import { sleep } from "../utils/timeUtil";
 
 export const refreshCidJob = new CronJob("0 5 * * *", () => refreshCid());
 
@@ -28,7 +27,6 @@ async function refreshCid() {
     for (const portVideo of portVideos) {
         let biliVideoDetail: VideoDetail;
         try {
-            await sleep(3000);
             biliVideoDetail = await getVideoDetails(portVideo.bvID);
             if (biliVideoDetail === null || biliVideoDetail === undefined) {
                 Logger.error(`Failed to get video detail for ${portVideo.bvID}`);
@@ -44,10 +42,7 @@ async function refreshCid() {
         if (biliVideoDetail.page.length === 1 || !!biliVideoDetail.page[0].cid) {
             // if there is only 1 part
             if (durationEquals(biliVideoDetail.page[0].duration, portVideo.biliDuration)) {
-                await db.prepare("run", `UPDATE "portVideo" SET "cid" = ? WHERE "UUID" = ?`, [
-                    biliVideoDetail.page[0].cid,
-                    portVideo.UUID,
-                ]);
+                await db.prepare("run", `UPDATE "portVideo" SET "cid" = ? WHERE "UUID" = ?`, [biliVideoDetail.page[0].cid, portVideo.UUID]);
             } else {
                 await db.prepare("run", `UPDATE "portVideo" SET "hidden" = ? WHERE "UUID" = ?`, [
                     HiddenType.MismatchHidden,
@@ -90,7 +85,6 @@ async function refreshCid() {
     for (const [videoID, segments] of videoSegmentMap) {
         let biliVideoDetail: VideoDetail;
         try {
-            await sleep(5000);
             biliVideoDetail = await getVideoDetails(videoID);
             if (biliVideoDetail === null || biliVideoDetail === undefined) {
                 Logger.error(`Failed to get video detail for ${videoID}`);
