@@ -1,12 +1,11 @@
-import { Request, Response } from "express";
 import { Logger } from "../../utils/logger";
-import { BilibiliAPI } from "./bilibiliApi";
 
 // make a queue that separates the api calls to avoid rate limiting, the request limit is once per 5 seconds
 
 interface QueueItem {
-    videoID: string;
-    resolve: (value?: unknown) => void;
+    key: string;
+    func: () => Promise<unknown>;
+    resolve: (value?: any) => void;
     reject: (reason?: any) => void;
 }
 
@@ -18,7 +17,6 @@ export class ApiQueue {
     private isWaiting: boolean;
     private nextRequest: number;
     private queue: QueueItem[];
-
 
     constructor(rate = 5000, checkFrequency = 100) {
         this.rate = rate;
@@ -32,26 +30,25 @@ export class ApiQueue {
         this.checkToCallApi = this.checkToCallApi.bind(this);
     }
 
-    public callApi(videoID: string): Promise<unknown> {
+    public callApi<T>(key: string, func: () => Promise<T>): Promise<T> {
         return new Promise((resolve, reject) => {
-            this.queue.push({ videoID, resolve, reject });
+            this.queue.push({ key, func, resolve, reject });
             this.checkToCallApi();
         });
     }
 
     private checkToCallApi() {
-        Logger.info(`checking to call api: ${this.isRunning} ${this.queue.length}`);
-
         if (!this.isRunning && this.queue.length > 0 && performance.now() >= this.nextRequest) {
             this.isRunning = true;
-            const { videoID, resolve, reject } = this.queue.shift();
+            const { key, func, resolve, reject } = this.queue.shift();
 
-            BilibiliAPI.getVideoDetailView(videoID).then((result) => {
-                resolve(result);
-            }).catch(reject).finally(() => {
-                this.nextRequest = performance.now() + this.rate;
-                this.isRunning = false;
-            });
+            func()
+                .then(resolve)
+                .catch(reject)
+                .finally(() => {
+                    this.nextRequest = performance.now() + this.rate;
+                    this.isRunning = false;
+                });
         }
         if (!this.isWaiting && this.queue.length > 0) {
             this.isWaiting = true;
@@ -60,16 +57,5 @@ export class ApiQueue {
                 this.checkToCallApi();
             }, this.checkFrequency);
         }
-
     }
-}
-
-const api = new ApiQueue(5000, 100);
-
-
-export async function testRoute(req: Request, res: Response) {
-    const videoIDs = req.body.videoID as string[];
-    const repsonse = await Promise.all(videoIDs.map(api.callApi));
-
-    return res.send(repsonse);
 }
