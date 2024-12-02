@@ -21,11 +21,6 @@ export class BilibiliAPI {
         }
     }
 
-    static async getVideoDetailsFromPagelist(videoID: string): Promise<BilibiliPagelistDetail> {
-        const pagelist = await this.getPagelist(videoID);
-        return pagelist[0];
-    }
-
     static async getVideoDetailView(videoID: string): Promise<BilibiliVideoDetailView> {
         Logger.info(`Getting video detail from view API: ${videoID}`);
         const url = "https://api.bilibili.com/x/web-interface/view";
