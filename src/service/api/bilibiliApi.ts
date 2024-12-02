@@ -2,7 +2,7 @@ import axios from "axios";
 import { BilibiliPagelistDetail } from "../../types/bilibiliPagelist.model";
 import { BilibiliVideoDetailView } from "../../types/bilibiliViewApi.model";
 import { Logger } from "../../utils/logger";
-import { ApiQueue } from "./ApiQueue";
+import { ApiQueue } from "./ApiRateQueue";
 
 export class BilibiliAPI {
     static apiQueue = new ApiQueue(3000, 100);
@@ -12,6 +12,7 @@ export class BilibiliAPI {
     }
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 async function getPagelist(videoID: string): Promise<BilibiliPagelistDetail[]> {
     Logger.info(`Getting video detail from Pagelist API: ${videoID}`);
     const pagelist_url = "https://api.bilibili.com/x/player/pagelist";
