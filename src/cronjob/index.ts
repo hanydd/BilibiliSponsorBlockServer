@@ -14,7 +14,6 @@ export function startAllCrons(): void {
             // only run in production mode
             dumpDatebaseJob.start();
             refreshCidJob.start();
-            refreshCidJob.fireOnTick();
         }
     } else {
         Logger.info("Crons dissabled");
