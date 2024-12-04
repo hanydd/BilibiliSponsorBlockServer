@@ -38,12 +38,14 @@ export class ApiQueue {
     }
 
     private checkToCallApi() {
-        if (!this.isRunning && this.queue.length() > 0 && performance.now() >= this.nextRequest) {
+        if (this.queue.length() == 0) {
+            return;
+        }
+        if (!this.isRunning && performance.now() >= this.nextRequest) {
             this.isRunning = true;
             const { key, list } = this.queue.shift();
 
             if (list.length === 0) {
-                this.nextRequest = performance.now() + this.rate;
                 this.isRunning = false;
             } else {
                 list[0]
@@ -56,7 +58,7 @@ export class ApiQueue {
                     });
             }
         }
-        if (!this.isWaiting && this.queue.length() > 0) {
+        if (!this.isWaiting) {
             this.isWaiting = true;
             setTimeout(() => {
                 this.isWaiting = false;
