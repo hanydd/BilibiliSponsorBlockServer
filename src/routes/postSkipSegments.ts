@@ -66,9 +66,6 @@ async function autoModerateSubmission(
 ) {
     // check if cid exist
     const pageDetail = apiVideoDetails.page.filter((p) => p.cid === submission.cid);
-    if (!submission.cid) {
-        return "目前插件暂不支持分P视频！";
-    }
     if (pageDetail.length == 0) {
         return "分P视频cid错误";
     }
@@ -557,6 +554,9 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         const rawIP = getIP(req);
 
         const newData = await updateDataIfVideoDurationChange(videoID, cid, service, videoDuration, videoDurationParam);
+        if (!cid && !newData) {
+            return res.status(400).send("目前插件暂不支持分P视频！");
+        }
         if (!newData) {
             return res.status(400).send("cid有误！请刷新页面再试");
         }
