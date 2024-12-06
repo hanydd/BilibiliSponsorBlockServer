@@ -1,13 +1,15 @@
+import { db } from "../databases/databases";
+import { VideoID } from "../types/segments.model";
+import { HashedUserID } from "../types/user.model";
+import { Logger } from "../utils/logger";
+import { getVideoDetails, VideoDetail } from "./api/getVideoDetails";
 import redis from "./redis/redis";
 import { tempVIPKey } from "./redis/redisKeys";
-import { HashedUserID } from "../types/user.model";
-import { VideoID } from "../types/segments.model";
-import { Logger } from "../utils/logger";
-import { getVideoDetails } from "./api/getVideoDetails";
-import { db } from "../databases/databases";
 
-export const isUserTempVIP = async (hashedUserID: HashedUserID, videoID: VideoID): Promise<boolean> => {
-    const apiVideoDetails = await getVideoDetails(videoID);
+export const isUserTempVIP = async (hashedUserID: HashedUserID, videoID: VideoID, apiVideoDetails?: VideoDetail): Promise<boolean> => {
+    if (!apiVideoDetails) {
+        apiVideoDetails = await getVideoDetails(videoID);
+    }
     const channelID = apiVideoDetails?.authorId;
     try {
         const reply = await redis.get(tempVIPKey(hashedUserID));

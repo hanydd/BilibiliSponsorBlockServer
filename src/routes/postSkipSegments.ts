@@ -551,10 +551,6 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
     }
 
     try {
-        const isVIP = await isUserVIP(userID);
-        const isTempVIP = await isUserTempVIP(userID, videoID);
-        const rawIP = getIP(req);
-
         const newData = await updateDataIfVideoDurationChange(videoID, cid, service, videoDuration, videoDurationParam);
         if (!cid && !newData) {
             return res.status(400).send("目前插件暂不支持分P视频！");
@@ -565,6 +561,10 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         videoDuration = newData.videoDuration;
         cid = newData.cid;
         const { lockedCategoryList, apiVideoDetails } = newData;
+
+        const isVIP = await isUserVIP(userID);
+        const isTempVIP = await isUserTempVIP(userID, videoID, newData.apiVideoDetails);
+        const rawIP = getIP(req);
 
         // Check if all submissions are correct
         const segmentCheckResult = await checkEachSegmentValid(
