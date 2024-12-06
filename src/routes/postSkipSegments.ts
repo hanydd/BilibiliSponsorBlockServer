@@ -517,6 +517,12 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
     }
     const userID: HashedUserID = await getHashCache(paramUserID);
 
+    const lock = await acquireLock(`postSkipSegment:${videoID}.${userID}`);
+    if (!lock.status) {
+        res.status(429).send("已有进行中的提交！");
+        return;
+    }
+
     const invalidCheckResult = await checkInvalidFields(
         videoID,
         cid,
@@ -528,6 +534,7 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
         service
     );
     if (!invalidCheckResult.pass) {
+        lock.unlock();
         return res.status(invalidCheckResult.errorCode).send(invalidCheckResult.errorMessage);
     }
 
@@ -539,13 +546,8 @@ export async function postSkipSegments(req: Request, res: Response): Promise<Res
                 ""
             )}', times: ${segments.reduce<string>((prev, val) => `${prev} ${val.segment}`, "")}`
         );
+        lock.unlock();
         return res.status(userWarningCheckResult.errorCode).send(userWarningCheckResult.errorMessage);
-    }
-
-    const lock = await acquireLock(`postSkipSegment:${videoID}.${userID}`);
-    if (!lock.status) {
-        res.status(429).send("Submission already in progress");
-        return;
     }
 
     try {
