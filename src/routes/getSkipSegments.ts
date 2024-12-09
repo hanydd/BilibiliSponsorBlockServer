@@ -34,6 +34,7 @@ import { promiseOrTimeout } from "../utils/promise";
 import { QueryCacher } from "../utils/queryCacher";
 import { shadowHiddenIPKey, skipSegmentGroupsKey } from "../service/redis/redisKeys";
 import { getReputation } from "../service/reputationService";
+import { hashPrefixTester } from "../utils/hashPrefixTester";
 
 async function prepareCategorySegments(
     req: Request,
@@ -409,7 +410,7 @@ function splitPercentOverlap(groups: OverlappingSegmentGroup[]): OverlappingSegm
     });
 }
 
-async function getSkipSegments(req: Request, res: Response): Promise<Response> {
+export async function getSkipSegments(req: Request, res: Response): Promise<Response> {
     const videoID = req.query.videoID as VideoID;
     const cid = req.query.cid as string;
     if (!videoID) {
@@ -444,11 +445,41 @@ async function getSkipSegments(req: Request, res: Response): Promise<Response> {
     return res.send(segments);
 }
 
+export async function getSkipSegmentsByHash(req: Request, res: Response): Promise<Response> {
+    let hashPrefix = req.params.prefix as VideoIDHash;
+    if (!req.params.prefix || !hashPrefixTester(req.params.prefix)) {
+        return res.status(400).send("Hash prefix does not match format requirements."); // Exit early on faulty prefix
+    }
+    hashPrefix = hashPrefix.toLowerCase() as VideoIDHash;
+
+    const parseResult = parseSkipSegments(req);
+    if (parseResult.errors.length > 0) {
+        return res.status(400).send(parseResult.errors);
+    }
+    const { categories, actionTypes, requiredSegments, service } = parseResult;
+
+    // Get all video id's that match hash prefix
+    const segments = await getSegmentsByHash(req, hashPrefix, categories, actionTypes, requiredSegments, service);
+
+    try {
+        await getEtag("skipSegmentsHash", hashPrefix, service)
+            .then((etag) => res.set("ETag", etag))
+            .catch(/* istanbul ignore next */ () => null);
+        const output = Object.entries(segments).map(([videoID, data]) => ({
+            videoID,
+            segments: data.segments,
+        }));
+        return res.status(output.length === 0 ? 404 : 200).json(output);
+    } catch (e) /* istanbul ignore next */ {
+        Logger.error(`skip segments by hash error: ${e}`);
+
+        return res.status(500).send("Internal server error");
+    }
+}
+
 const filterRequiredSegments = (UUID: SegmentUUID, requiredSegments: SegmentUUID[]): boolean => {
     for (const search of requiredSegments) {
         if (search === UUID || UUID.indexOf(search) == 0) return true;
     }
     return false;
 };
-
-export { getSegmentsByHash, getSkipSegments };
