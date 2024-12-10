@@ -1,10 +1,10 @@
+import crypto from "crypto";
+import { config } from "../config";
 import redis from "../service/redis/redis";
 import { shaHashKey } from "../service/redis/redisKeys";
 import { HashedValue } from "../types/hash.model";
-import { Logger } from "../utils/logger";
-import { getHash } from "../utils/getHash";
-import { config } from "../config";
 import { HashedIP, IPAddress } from "../types/segments.model";
+import { Logger } from "./logger";
 
 const defaultedHashTimes = 5000;
 const cachedHashTimes = defaultedHashTimes - 1;
@@ -42,6 +42,17 @@ async function getFromRedis<T extends string>(key: HashedValue): Promise<T & Has
     }
 
     return data as T & HashedValue;
+}
+
+export function getHash<T extends string>(value: T, times = 5000): T & HashedValue {
+    if (times <= 0) return "" as T & HashedValue;
+
+    for (let i = 0; i < times; i++) {
+        const hashCreator = crypto.createHash("sha256");
+        value = hashCreator.update(value).digest("hex") as T;
+    }
+
+    return value as T & HashedValue;
 }
 
 export async function getHashedIP(ip: IPAddress): Promise<HashedIP> {

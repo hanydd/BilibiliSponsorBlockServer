@@ -1,5 +1,5 @@
 import { db } from "../databases/databases";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Logger } from "../utils/logger";
 import { Request, Response } from "express";
 

@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Logger } from "../utils/logger";
 import { isUserVIP } from "../service/VIPUserService";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { db } from "../databases/databases";
 
 const ACTION_NONE = Symbol("none");

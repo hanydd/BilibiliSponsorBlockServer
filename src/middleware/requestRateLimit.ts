@@ -6,8 +6,9 @@ import redis from "../service/redis/redis";
 import { isUserVIP } from "../service/VIPUserService";
 import { RateLimitConfig } from "../types/config.model";
 import { UserID } from "../types/user.model";
-import { getHash } from "../utils/getHash";
-import { getHashCache } from "../utils/getHashCache";
+import { getHash } from "../utils/HashCacheUtil";
+
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getIP } from "../utils/getIP";
 import { Logger } from "../utils/logger";
 

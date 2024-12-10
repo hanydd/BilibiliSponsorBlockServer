@@ -1,7 +1,8 @@
 import { db } from "../databases/databases";
 import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
 import { HiddenType, VideoID } from "../types/segments.model";
-import { getHash } from "../utils/getHash";
+import { getHash } from "../utils/HashCacheUtil";
+
 import { QueryCacher } from "../utils/queryCacher";
 import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../service/redis/redisKeys";
 

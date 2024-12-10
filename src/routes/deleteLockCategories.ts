@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { db } from "../databases/databases";
 import { ActionType, Category, Service, VideoID } from "../types/segments.model";
 import { UserID } from "../types/user.model";

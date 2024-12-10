@@ -16,7 +16,7 @@ import {
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { checkBanStatus } from "../service/checkBan";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getIP } from "../utils/getIP";
 import { getVideoDetails, VideoDetail } from "../service/api/getVideoDetails";
 import { isUserTempVIP } from "../service/VIPUserService";

@@ -5,8 +5,9 @@ import { PortVideoDB, PortVideoVotesDB, portVideoUUID } from "../types/portVideo
 import { HiddenType, IPAddress, VideoID, VoteType } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { validate } from "../service/validate/bilibiliID";
-import { getHash } from "../utils/getHash";
-import { getHashCache, getHashedIP } from "../utils/getHashCache";
+import { getHash } from "../utils/HashCacheUtil";
+
+import { getHashCache, getHashedIP } from "../utils/HashCacheUtil";
 import { getIP } from "../utils/getIP";
 import { isUserTempVIP, isUserVIP } from "../service/VIPUserService";
 import { Logger } from "../utils/logger";

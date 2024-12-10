@@ -5,7 +5,7 @@ import { isUserBanned } from "../service/checkBan";
 import { isUserVIP } from "../service/VIPUserService";
 import { Category, SegmentUUID } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Logger } from "../utils/logger";
 import { canSubmit } from "../utils/permissions";
 import { getReputation } from "../service/reputationService";

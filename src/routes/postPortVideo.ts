@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { HiddenType, Service, VideoDuration, VoteType } from "../types/segments.model";
 import { db, privateDB } from "../databases/databases";
 import { HashedUserID } from "../types/user.model";
-import { getHashCache, getHashedIP } from "../utils/getHashCache";
+import { getHashCache, getHashedIP } from "../utils/HashCacheUtil";
 import { config } from "../config";
 import * as youtubeID from "../service/validate/youtubeID";
 import * as biliID from "../service/validate/bilibiliID";
@@ -14,7 +14,8 @@ import { PortVideo, PortVideoInterface } from "../types/portVideo.model";
 import { average } from "../utils/array";
 import { getYoutubeSegments } from "../service/api/sponsorBlockApi";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
-import { getHash } from "../utils/getHash";
+import { getHash } from "../utils/HashCacheUtil";
+
 import { getReputation } from "../service/reputationService";
 import { getIP } from "../utils/getIP";
 import { QueryCacher } from "../utils/queryCacher";

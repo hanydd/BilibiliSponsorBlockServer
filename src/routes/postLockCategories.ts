@@ -3,7 +3,7 @@ import { config } from "../config";
 import { db } from "../databases/databases";
 import { isUserVIP } from "../service/VIPUserService";
 import { ActionType, Category, VideoIDHash } from "../types/segments.model";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getService } from "../utils/getService";
 import { Logger } from "../utils/logger";
 

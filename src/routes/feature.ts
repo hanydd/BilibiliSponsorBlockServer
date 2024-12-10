@@ -1,4 +1,4 @@
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { db } from "../databases/databases";
 import { config } from "../config";
 import { Request, Response } from "express";

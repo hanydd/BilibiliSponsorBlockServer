@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { isUserVIP } from "../service/VIPUserService";
 import { Service, VideoID, VideoIDHash } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getService } from "../utils/getService";
 import { Logger } from "../utils/logger";
 import { QueryCacher } from "../utils/queryCacher";

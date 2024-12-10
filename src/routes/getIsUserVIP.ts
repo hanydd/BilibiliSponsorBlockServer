@@ -1,5 +1,5 @@
 import { Logger } from "../utils/logger";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Request, Response } from "express";
 import { HashedUserID, UserID } from "../types/user.model";
 import { isUserVIP } from "../service/VIPUserService";

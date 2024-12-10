@@ -2,7 +2,8 @@ import { IDatabase, QueryType } from "./IDatabase";
 import Sqlite3, { Database, Database as SQLiteDatabase } from "better-sqlite3";
 import fs from "fs";
 import path from "path";
-import { getHash } from "../utils/getHash";
+import { getHash } from "../utils/HashCacheUtil";
+
 import { Logger } from "../utils/logger";
 
 export class Sqlite implements IDatabase {

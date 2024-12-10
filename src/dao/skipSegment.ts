@@ -2,7 +2,8 @@ import { db, privateDB } from "../databases/databases";
 import { PORT_SEGMENT_USER_ID } from "../routes/postPortVideo";
 import { portVideoUUID } from "../types/portVideo.model";
 import { DBSegment, HashedIP, HiddenType, Segment, SegmentUUID, Service, VideoID, VideoIDHash, Visibility } from "../types/segments.model";
-import { getHash } from "../utils/getHash";
+import { getHash } from "../utils/HashCacheUtil";
+
 import { getPortSegmentUUID } from "../utils/getSubmissionUUID";
 import { QueryCacher } from "../utils/queryCacher";
 import { cidListKey, skipSegmentsHashKey, skipSegmentsKey } from "../service/redis/redisKeys";

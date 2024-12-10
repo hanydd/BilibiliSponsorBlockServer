@@ -6,7 +6,7 @@ import { tempVIPKey } from "../service/redis/redisKeys";
 import { isUserVIP } from "../service/VIPUserService";
 import { VideoID } from "../types/segments.model";
 import { HashedUserID } from "../types/user.model";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Logger } from "../utils/logger";
 
 interface AddUserAsTempVIPRequest extends Request {

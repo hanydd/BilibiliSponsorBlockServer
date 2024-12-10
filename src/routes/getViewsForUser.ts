@@ -1,6 +1,6 @@
 import { db } from "../databases/databases";
 import { Request, Response } from "express";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Logger } from "../utils/logger";
 
 export async function getViewsForUser(req: Request, res: Response): Promise<Response> {

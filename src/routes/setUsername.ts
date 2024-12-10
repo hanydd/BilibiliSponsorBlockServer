@@ -1,7 +1,7 @@
 import { config } from "../config";
 import { Logger } from "../utils/logger";
 import { db, privateDB } from "../databases/databases";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { Request, Response } from "express";
 import { isUserBanned } from "../service/checkBan";
 import { HashedUserID } from "../types/user.model";

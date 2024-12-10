@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { Logger } from "../utils/logger";
 import { db } from "../databases/databases";
 import { isUserVIP } from "../service/VIPUserService";
-import { getHashCache } from "../utils/getHashCache";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { HashedUserID, UserID } from "../types/user.model";
 import { config } from "../config";
 import { WarningType } from "../types/warning.model";

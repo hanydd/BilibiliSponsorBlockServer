@@ -24,8 +24,9 @@ import {
     VotableObject,
 } from "../types/segments.model";
 import { shuffleArray } from "../utils/array";
-import { getHash } from "../utils/getHash";
-import { getHashCache } from "../utils/getHashCache";
+import { getHash } from "../utils/HashCacheUtil";
+
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { Logger } from "../utils/logger";

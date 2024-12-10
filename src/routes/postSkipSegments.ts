@@ -23,8 +23,8 @@ import {
 } from "../types/segments.model";
 import { HashedUserID, UserID } from "../types/user.model";
 import { durationEquals } from "../utils/durationUtil";
-import { getHash } from "../utils/getHash";
-import { getHashCache } from "../utils/getHashCache";
+import { getHash } from "../utils/HashCacheUtil";
+import { getHashCache } from "../utils/HashCacheUtil";
 import { getIP } from "../utils/getIP";
 import { getService } from "../utils/getService";
 import { getSubmissionUUID } from "../utils/getSubmissionUUID";
