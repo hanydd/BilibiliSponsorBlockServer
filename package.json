@@ -19,6 +19,7 @@
   "author": "Ajay Ramachandran",
   "license": "AGPL-3.0-only",
   "dependencies": {
+    "@alicloud/pop-core": "^1.8.0",
     "axios": "^1.7.2",
     "better-sqlite3": "^11.1.2",
     "cron": "^3.1.7",
