@@ -50,7 +50,8 @@ export interface SBSConfig {
     newLeafURLs?: string[];
     youtubeDataApiKey?: string;
     neuralBlockURL?: string;
-    discordNeuralBlockRejectWebhookURL?: string;
+    ContentCheckApiKey?: string;
+    ContentCheckApiSecret?: string;
     minReputationToSubmitChapter: number;
     minReputationToSubmitFiller: number;
     userCounterURL?: string;
