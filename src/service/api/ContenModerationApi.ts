@@ -1,6 +1,7 @@
 import RPCClient from "@alicloud/pop-core";
-import { ApiQueue } from "./ApiRateQueue";
 import { config } from "../../config";
+import { Logger } from "../../utils/logger";
+import { ApiQueue } from "./ApiRateQueue";
 
 interface ApiResponse {
     RequestId: string;
@@ -17,13 +18,15 @@ const requestOption = {
     formatParams: false,
 };
 
+const url = "https://green-cip.cn-shanghai.aliyuncs.com";
+
 export class ContentModerationApi {
     static apiQueue = new ApiQueue(1000, 100);
 
     private static client = new RPCClient({
         accessKeyId: config.ContentCheckApiKey,
         accessKeySecret: config.ContentCheckApiSecret,
-        endpoint: "https://green-cip.cn-shanghai.aliyuncs.com",
+        endpoint: url,
         apiVersion: "2022-03-02",
     });
 
@@ -34,10 +37,9 @@ export class ContentModerationApi {
     private static async checkNicknameProcess(nickname: string): Promise<boolean> {
         const params = {
             Service: "nickname_detection",
-            ServiceParameters: JSON.stringify({
-                content: nickname,
-            }),
+            ServiceParameters: JSON.stringify({ content: nickname }),
         };
+        Logger.info(`Checking nickname ${nickname} using Service: ${url}`);
         const res = (await ContentModerationApi.client.request("TextModeration", params, requestOption)) as ApiResponse;
         if (res.Code == 200) {
             return res?.Data?.labels == "";

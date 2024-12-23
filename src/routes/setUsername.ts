@@ -1,15 +1,17 @@
-import { config } from "../config";
-import { Logger } from "../utils/logger";
-import { db, privateDB } from "../databases/databases";
-import { getHashCache } from "../utils/HashCacheUtil";
 import { Request, Response } from "express";
+import { config } from "../config";
+import { db, privateDB } from "../databases/databases";
+import { ContentModerationApi } from "../service/api/ContenModerationApi";
 import { isUserBanned } from "../service/checkBan";
 import { HashedUserID } from "../types/user.model";
+import { getHashCache } from "../utils/HashCacheUtil";
+import { Logger } from "../utils/logger";
 
-function logUserNameChange(userID: string, newUserName: string, oldUserName: string, updatedByAdmin: boolean): Promise<Response>  {
-    return privateDB.prepare("run",
+function logUserNameChange(userID: string, newUserName: string, oldUserName: string, updatedByAdmin: boolean): Promise<Response> {
+    return privateDB.prepare(
+        "run",
         `INSERT INTO "userNameLogs"("userID", "newUserName", "oldUserName", "updatedByAdmin", "updatedAt") VALUES(?, ?, ?, ?, ?)`,
-        [userID, newUserName, oldUserName, + updatedByAdmin, new Date().getTime()]
+        [userID, newUserName, oldUserName, +updatedByAdmin, new Date().getTime()]
     );
 }
 
@@ -22,11 +24,6 @@ export async function setUsername(req: Request, res: Response): Promise<Response
     if (userIDInput == undefined || userName == undefined || userIDInput === "undefined" || userName.length > 64) {
         //invalid request
         return res.sendStatus(400);
-    }
-
-    if (userName.includes("discord")) {
-        // Don't allow
-        return res.sendStatus(200);
     }
 
     const timings = [Date.now()];
@@ -43,21 +40,24 @@ export async function setUsername(req: Request, res: Response): Promise<Response
             //this is the admin controlling the other users account, don't hash the controling account's ID
             hashedUserID = userIDInput as HashedUserID;
 
-            if (await getHashCache(adminUserIDInput) != config.adminUserID) {
+            if ((await getHashCache(adminUserIDInput)) != config.adminUserID) {
                 //they aren't the admin
                 return res.sendStatus(403);
             }
         } else {
             // check privateID against publicID
-            if (!await checkPrivateUsername(userName, userIDInput)) {
+            if (!(await checkPrivateUsername(userName, userIDInput))) {
                 return res.sendStatus(400);
             }
             //hash the userID
-            hashedUserID = await getHashCache(userIDInput) as HashedUserID;
+            hashedUserID = (await getHashCache(userIDInput)) as HashedUserID;
 
             timings.push(Date.now());
 
-            const row = await db.prepare("get", `SELECT count(*) as "userCount" FROM "userNames" WHERE "userID" = ? AND "locked" = 1`, [hashedUserID]);
+            // check if the username is locked
+            const row = await db.prepare("get", `SELECT count(*) as "userCount" FROM "userNames" WHERE "userID" = ? AND "locked" = 1`, [
+                hashedUserID,
+            ]);
             if (row.userCount > 0) {
                 return res.sendStatus(200);
             }
@@ -67,9 +67,14 @@ export async function setUsername(req: Request, res: Response): Promise<Response
             if (await isUserBanned(hashedUserID)) {
                 return res.sendStatus(200);
             }
+
+            // check moderator
+            const moderatorCheck = await ContentModerationApi.checkNickname(userName);
+            if (!moderatorCheck) {
+                return res.status(401).send("用户名不符合规范");
+            }
         }
-    }
-    catch (error) /* istanbul ignore next */ {
+    } catch (error) /* istanbul ignore next */ {
         Logger.error(error as string);
         return res.sendStatus(500);
     }
@@ -88,11 +93,19 @@ export async function setUsername(req: Request, res: Response): Promise<Response
             if (userName == hashedUserID && !locked) {
                 await db.prepare("run", `DELETE FROM "userNames" WHERE "userID" = ?`, [hashedUserID]);
             } else {
-                await db.prepare("run", `UPDATE "userNames" SET "userName" = ?, "locked" = ? WHERE "userID" = ?`, [userName, locked, hashedUserID]);
+                await db.prepare("run", `UPDATE "userNames" SET "userName" = ?, "locked" = ? WHERE "userID" = ?`, [
+                    userName,
+                    locked,
+                    hashedUserID,
+                ]);
             }
         } else {
             //add to the db
-            await db.prepare("run", `INSERT INTO "userNames"("userID", "userName", "locked") VALUES(?, ?, ?)`, [hashedUserID, userName, locked]);
+            await db.prepare("run", `INSERT INTO "userNames"("userID", "userName", "locked") VALUES(?, ?, ?)`, [
+                hashedUserID,
+                userName,
+                locked,
+            ]);
         }
 
         timings.push(Date.now());
@@ -100,7 +113,6 @@ export async function setUsername(req: Request, res: Response): Promise<Response
         await logUserNameChange(hashedUserID, userName, oldUserName, adminUserIDInput !== undefined);
 
         timings.push(Date.now());
-
 
         return res.status(200).send(timings.join(", "));
     } catch (err) /* istanbul ignore next */ {
