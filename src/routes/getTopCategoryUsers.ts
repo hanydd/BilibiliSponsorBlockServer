@@ -33,11 +33,12 @@ async function generateTopCategoryUsersStats(sortBy: string, category: string) {
         SUM(((CASE WHEN "sponsorTimes"."endTime" - "sponsorTimes"."startTime" > ? THEN ?
             ELSE "sponsorTimes"."endTime" - "sponsorTimes"."startTime" END) / 60) * "sponsorTimes"."views") as "minutesSaved",
         SUM("votes") as "userVotes",
-       "sponsorTimes"."userID" as "userName"
+        COALESCE("userNames"."userName", "sponsorTimes"."userID") as "userName"
         FROM "sponsorTimes"
+            LEFT JOIN "userNames" ON "sponsorTimes"."userID"="userNames"."userID"
             LEFT JOIN "shadowBannedUsers" ON "sponsorTimes"."userID"="shadowBannedUsers"."userID"
         WHERE "sponsorTimes"."category" = ? AND "sponsorTimes"."votes" > -1 AND "sponsorTimes"."shadowHidden" != 1 AND "shadowBannedUsers"."userID" IS NULL
-        GROUP BY "sponsorTimes"."userID"
+        GROUP BY COALESCE("userName", "sponsorTimes"."userID")
         HAVING SUM("votes") >= 0
         ORDER BY "${sortBy}" DESC LIMIT 100`,
         [maxRewardTimePerSegmentInSeconds, maxRewardTimePerSegmentInSeconds, category]
