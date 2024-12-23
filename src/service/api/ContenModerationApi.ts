@@ -21,7 +21,7 @@ const requestOption = {
 const url = "https://green-cip.cn-shanghai.aliyuncs.com";
 
 export class ContentModerationApi {
-    static apiQueue = new ApiQueue(1000, 100);
+    static apiQueue = new ApiQueue(5000, 500);
 
     private static client = new RPCClient({
         accessKeyId: config.ContentCheckApiKey,

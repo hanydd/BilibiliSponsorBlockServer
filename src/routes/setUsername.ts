@@ -6,6 +6,7 @@ import { isUserBanned } from "../service/checkBan";
 import { HashedUserID } from "../types/user.model";
 import { getHashCache } from "../utils/HashCacheUtil";
 import { Logger } from "../utils/logger";
+import { acquireLock } from "../service/redis/redisLock";
 
 function logUserNameChange(userID: string, newUserName: string, oldUserName: string, updatedByAdmin: boolean): Promise<Response> {
     return privateDB.prepare(
@@ -68,7 +69,13 @@ export async function setUsername(req: Request, res: Response): Promise<Response
                 return res.sendStatus(200);
             }
 
-            // check moderator
+            // check username moderator
+            if (!adminUserIDInput) {
+                const lock = await acquireLock(`lock.setUsername:${hashedUserID}`, 10 * 60);
+                if (!lock.status) {
+                    return res.status(429).send("只能每十分钟修改一次用户名");
+                }
+            }
             const moderatorCheck = await ContentModerationApi.checkNickname(userName);
             if (!moderatorCheck) {
                 return res.status(401).send("用户名不符合规范");
