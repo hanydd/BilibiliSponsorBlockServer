@@ -21,17 +21,28 @@ const requestOption = {
 const url = "https://green-cip.cn-shanghai.aliyuncs.com";
 
 export class ContentModerationApi {
+    private static client: RPCClient = null;
+    static {
+        try {
+            this.client = new RPCClient({
+                accessKeyId: config.ContentCheckApiKey,
+                accessKeySecret: config.ContentCheckApiSecret,
+                endpoint: url,
+                apiVersion: "2022-03-02",
+            });
+        } catch (err) {
+            Logger.error(`Failed to create Ali ContentModeration client: ${err}`);
+        }
+    }
+
     static apiQueue = new ApiQueue(5000, 500);
 
-    private static client = new RPCClient({
-        accessKeyId: config.ContentCheckApiKey,
-        accessKeySecret: config.ContentCheckApiSecret,
-        endpoint: url,
-        apiVersion: "2022-03-02",
-    });
-
-    public static checkNickname(nickname: string): Promise<boolean> {
-        return ContentModerationApi.apiQueue.callApi(nickname, () => ContentModerationApi.checkNicknameProcess(nickname));
+    public static async checkNickname(nickname: string): Promise<boolean> {
+        if (this.client == null) {
+            Logger.warn(`Skipping nickname check, client not initialized! ${nickname}`);
+            return true;
+        }
+        return await ContentModerationApi.apiQueue.callApi(nickname, () => ContentModerationApi.checkNicknameProcess(nickname));
     }
 
     private static async checkNicknameProcess(nickname: string): Promise<boolean> {
