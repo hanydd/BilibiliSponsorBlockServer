@@ -76,10 +76,6 @@ export async function setUsername(req: Request, res: Response): Promise<Response
                     return res.status(429).send("只能每十分钟修改一次用户名");
                 }
             }
-            const moderatorCheck = await ContentModerationApi.checkNickname(userName);
-            if (!moderatorCheck) {
-                return res.status(401).send("用户名不符合规范");
-            }
         }
     } catch (error) /* istanbul ignore next */ {
         Logger.error(error as string);
@@ -94,6 +90,15 @@ export async function setUsername(req: Request, res: Response): Promise<Response
 
         timings.push(Date.now());
 
+        if (row?.userName == userName) {
+            return res.sendStatus(200);
+        }
+
+        const moderatorCheck = await ContentModerationApi.checkNickname(userName);
+        if (!moderatorCheck) {
+            return res.status(401).send("用户名不符合规范");
+        }
+
         if (row?.userName !== undefined) {
             //already exists, update this row
             oldUserName = row.userName;
@@ -107,6 +112,9 @@ export async function setUsername(req: Request, res: Response): Promise<Response
                 ]);
             }
         } else {
+            if (userName == hashedUserID && !locked) {
+                return res.sendStatus(200);
+            }
             //add to the db
             await db.prepare("run", `INSERT INTO "userNames"("userID", "userName", "locked") VALUES(?, ?, ?)`, [
                 hashedUserID,
