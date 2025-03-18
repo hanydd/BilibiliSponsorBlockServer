@@ -1,10 +1,10 @@
 import { db } from "../databases/databases";
-import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
+import { PortVideo, PortVideoCount, PortVideoDB, PortVideoInterface, portVideoUUID } from "../types/portVideo.model";
 import { HiddenType, VideoID } from "../types/segments.model";
 import { getHash } from "../utils/HashCacheUtil";
 
-import { QueryCacher } from "../utils/queryCacher";
 import { portVideoByHashCacheKey, portVideoCacheKey, portVideoUserCountKey } from "../service/redis/redisKeys";
+import { QueryCacher } from "../utils/queryCacher";
 
 function getPortVideoDBByBvID(bvID: VideoID, downvoteThreshold = -2): Promise<PortVideoDB[]> {
     return db.prepare(
@@ -34,6 +34,15 @@ function getPortVideoDBByHashPrefix(hashPrefix: string): Promise<PortVideoInterf
         `SELECT "bvID", "cid", "ytbID", "UUID", "votes", "locked" FROM "portVideo"
         WHERE "hashedBvID" LIKE ? AND "hidden" = 0 AND "votes" > -2`,
         [`${hashPrefix}%`]
+    );
+}
+
+export function getPortVideoDBByUUID(uuid: portVideoUUID): Promise<PortVideoDB[]> {
+    return db.prepare(
+        "all",
+        `SELECT "bvID", "cid", "ytbID", "UUID", "votes", "locked", "hidden", "biliDuration", "ytbDuration", "userID", "userAgent", "timeSubmitted", "hashedBvID" FROM "portVideo"
+        WHERE "UUID" = ? AND "hidden" = 0 AND "votes" > -2`,
+        [uuid]
     );
 }
 

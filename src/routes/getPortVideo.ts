@@ -2,24 +2,36 @@ import { Request, Response } from "express";
 import {
     getPortVideoByBvIDCached,
     getPortVideoByHashPrefixCached,
-    getPortVideoDBByBvIDCached,
+    getPortVideoDBByUUID,
     hidePortVideoByUUID,
 } from "../dao/portVideo";
 import { createSegmentsFromYTB, getSegmentsFromDBByVideoID, hideSegmentsByUUID, saveNewSegments, updateVotes } from "../dao/skipSegment";
+import { getVideoDetails } from "../service/api/getVideoDetails";
 import { getYoutubeSegments } from "../service/api/sponsorBlockApi";
+import { YouTubeAPI } from "../service/api/youtubeApi";
+import { acquireLock } from "../service/redis/redisLock";
+import { validate } from "../service/validate/bilibiliID";
 import { HashedValue } from "../types/hash.model";
-import { PortVideo, PortVideoDB, PortVideoInterface } from "../types/portVideo.model";
+import { PortVideo, PortVideoDB, PortVideoInterface, portVideoUUID } from "../types/portVideo.model";
 import { DBSegment, Service, VideoDuration, VideoID } from "../types/segments.model";
 import { average } from "../utils/array";
 import { durationEquals, durationsAllEqual } from "../utils/durationUtil";
-import { getVideoDetails } from "../service/api/getVideoDetails";
 import { Logger } from "../utils/logger";
-import { acquireLock } from "../service/redis/redisLock";
-import { YouTubeAPI } from "../service/api/youtubeApi";
-import { validate } from "../service/validate/bilibiliID";
 
 export async function updatePortedSegments(req: Request, res: Response) {
     const bvid = req.body.videoID as VideoID;
+    const uuid = req.body.UUID as portVideoUUID;
+
+    if (uuid == null || bvid == null) {
+        return res.status(400).send("缺少参数");
+    }
+
+    const portVideoRecord = await getPortVideoDBByUUID(uuid);
+    if (!portVideoRecord || portVideoRecord.length != 1) {
+        return res.sendStatus(404);
+    } else if (portVideoRecord[0].bvID != bvid) {
+        return res.status(400).send("搬运视频和BV号不匹配");
+    }
 
     // do not release lock, but wait 1h for the lock to expire
     const lock = await acquireLock(`updatePortSegment:${bvid}`, 1000 * 60 * 60);
@@ -27,11 +39,6 @@ export async function updatePortedSegments(req: Request, res: Response) {
         return res.status(429).send("已经有人刷新过啦，每小时只能刷新一次！");
     }
 
-    const portVideoRecord = await getPortVideoDBByBvIDCached(bvid);
-    if (!portVideoRecord || portVideoRecord.length === 0) {
-        lock.unlock();
-        return res.sendStatus(404);
-    }
     await updateSegmentsFromSB(portVideoRecord[0]);
     return res.sendStatus(200);
 }
