@@ -412,8 +412,8 @@ async function updateDataIfVideoDurationChange(
         !previousSubmissions.some((e) => Math.abs(videoDuration - e.videoDuration) < 2);
 
     // Don't use cache if we don't know the video duration, or the client claims that it has changed
-    const ignoreCache = !cid || !videoDurationParam || previousSubmissions.length === 0 || videoDurationChanged(videoDurationParam);
-    const apiVideoDetails: VideoDetail = await getVideoDetails(videoID, ignoreCache);
+    // const ignoreCache = !cid || !videoDurationParam || previousSubmissions.length === 0 || videoDurationChanged(videoDurationParam);
+    const apiVideoDetails: VideoDetail = await getVideoDetails(videoID, true);
 
     // if video only has 1 p, use that
     if (!cid && apiVideoDetails?.page.length == 1) {
