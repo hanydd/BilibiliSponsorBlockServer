@@ -7,7 +7,7 @@ import { DBSegment, HiddenType, SegmentUUID } from "../types/segments.model";
 import { durationEquals } from "../utils/durationUtil";
 import { Logger } from "../utils/logger";
 
-export const refreshCidJob = new CronJob("0 5 * * *", () => refreshCid());
+export const refreshCidJob = new CronJob("0 5 * * 0", () => refreshCid());
 
 let isRunning = false;
 
