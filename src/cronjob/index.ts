@@ -1,10 +1,11 @@
 import { config } from "../config";
 import { Logger } from "../utils/logger";
-import { dumpDatebaseJob } from "./dumpDatabase";
+import { dumpDatabase, dumpDatabaseJob } from "./dumpDatabase";
 import { refreshCidJob } from "./refreshCid";
 import refreshTopUserViewJob from "./refreshTopUserView";
 
 export function startAllCrons(): void {
+    void dumpDatabase();
     if (config?.crons?.enabled) {
         Logger.info("Crons started");
 
@@ -12,7 +13,7 @@ export function startAllCrons(): void {
 
         if (config.mode === "production") {
             // only run in production mode
-            dumpDatebaseJob.start();
+            dumpDatabaseJob.start();
             refreshCidJob.start();
         }
     } else {

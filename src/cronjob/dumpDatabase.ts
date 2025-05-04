@@ -4,7 +4,7 @@ import fs from "fs";
 import { config } from "../config";
 import { Logger } from "../utils/logger";
 
-export const dumpDatebaseJob = new CronJob("0 6 * * *", () => dumpDatabase());
+export const dumpDatabaseJob = new CronJob("0 6 * * *", () => dumpDatabase());
 
 const credentials: ExecOptions = {
     env: {
@@ -17,7 +17,7 @@ const credentials: ExecOptions = {
     },
 };
 
-async function dumpDatabase() {
+export async function dumpDatabase() {
     const tables = config.dumpDatabase.tables;
     const currentTimestamp = Date.now();
     const currentDate = new Date().toISOString().slice(0, 10);
