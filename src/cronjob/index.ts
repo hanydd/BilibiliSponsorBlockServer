@@ -1,11 +1,10 @@
 import { config } from "../config";
 import { Logger } from "../utils/logger";
-import { dumpDatabase, dumpDatabaseJob } from "./dumpDatabase";
+import { dumpDatabaseJob } from "./dumpDatabase";
 import { refreshCidJob } from "./refreshCid";
 import refreshTopUserViewJob from "./refreshTopUserView";
 
 export function startAllCrons(): void {
-    void dumpDatabase();
     if (config?.crons?.enabled) {
         Logger.info("Crons started");
 
